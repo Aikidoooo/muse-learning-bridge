@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>総合模擬テスト（1ページ目） | Muse Learning Bridge</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .image-select-box .option-list {
+      list-style: none;
+      margin: 8px 0 0;
+      padding: 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      background: rgba(255, 255, 255, 0.9);
+      display: none;
+      max-width: 320px;
+    }
+    .image-select-box.open .option-list {
+      display: block;
+    }
+    .image-select-box .option-list > li {
+      padding: 7px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .image-select-box .option-list > li:hover {
+      background: rgba(10, 102, 194, 0.1);
+    }
+    .image-select-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(15, 23, 42, 0.16);
+      background: rgba(255, 255, 255, 0.9);
+      cursor: pointer;
+    }
+    .spen-mod-input-text {
+      width: 100%;
+      max-width: 360px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(15, 23, 42, 0.16);
+      background: rgba(255, 255, 255, 0.92);
+      font: inherit;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="glass-bar">
+      <div class="brand-group">
+        <a href="index.html" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">戻る</a>
+        <p class="brand-title">総合模擬テスト（Page 1 / 2）</p>
+      </div>
+      <div class="user-pill">
+        <span>受験者: デモ学習者（DEMO-001）</span>
+      </div>
+    </header>
+
+    <main
+      id="material-root"
+      data-material-id="mat-comp-p1"
+      data-material-name="Classi互換 総合模擬テスト（数式・画像・複数ページ）"
+      data-material-category="mock_test"
+      data-ai-allowed="true"
+      data-auto-submit-allowed="true"
+      data-permission-note="拡張機能非依存のPython抽出エンジン検証用・自動解答およびページ遷移許可済み"
+    >
+      <div class="page-header">
+        <h1>総合模擬テスト（第1ページ）</h1>
+        <div class="badge-row">
+          <span class="badge badge-ok">AI利用許可済み</span>
+          <span class="badge badge-ok">自動解答・遷移許可</span>
+        </div>
+      </div>
+
+      <div class="question-stack">
+        <!-- 1. 数式付き単一選択 (KaTeX風 annotation + sup 重複なし抽出テスト) -->
+        <article class="glass-panel question-card" data-question-id="c-q1" data-question-number="問1" data-question-format="single_choice">
+          <div class="question-head">
+            <span class="question-num">問1</span>
+            <span class="badge badge-ok">数式・単一選択</span>
+          </div>
+          <p class="question-prompt">
+            関数
+            <span class="katex">
+              <span class="katex-mathml">
+                <math><semantics><annotation encoding="application/x-tex">f(x) = x^2 - 4x + 7</annotation></semantics></math>
+              </span>
+              <span class="katex-html" aria-hidden="true">f(x) = x2 - 4x + 7</span>
+            </span>
+            の最小値を求めなさい（ただし x<sup>2</sup> の係数は 1 とする）。
+          </p>
+          <div class="choice-list">
+            <label class="choice-option"><input type="radio" name="c-q1" value="1" /> <span>1</span></label>
+            <label class="choice-option"><input type="radio" name="c-q1" value="3" /> <span>3</span></label>
+            <label class="choice-option"><input type="radio" name="c-q1" value="5" /> <span>5</span></label>
+            <label class="choice-option"><input type="radio" name="c-q1" value="7" /> <span>7</span></label>
+          </div>
+        </article>
+
+        <!-- 2. Classi風 multi-select -->
+        <section class="glass-panel spen-ly-question-section" data-question-id="c-q2">
+          <div class="question-head">
+            <span class="spen-mod-heading lv-3"><span class="heading-text question-num">問2</span></span>
+            <span class="badge badge-ok">Classi複数選択</span>
+          </div>
+          <p class="section-body question-prompt">二次方程式 x<sup>2</sup> - 5x + 6 = 0 の解をすべて選びなさい。</p>
+          <multi-select>
+            <div class="question-selector choice-list">
+              <label class="choice-option answer-selector"><input type="checkbox" name="c-q2" value="1" /> <span>1</span></label>
+              <label class="choice-option answer-selector"><input type="checkbox" name="c-q2" value="2" /> <span>2</span></label>
+              <label class="choice-option answer-selector"><input type="checkbox" name="c-q2" value="3" /> <span>3</span></label>
+              <label class="choice-option answer-selector"><input type="checkbox" name="c-q2" value="6" /> <span>6</span></label>
+            </div>
+          </multi-select>
+        </section>
+
+        <!-- 3. Classi風 image-selector (非表示選択肢からの抽出とクリック選択テスト) -->
+        <section class="glass-panel spen-ly-question-section" data-question-id="c-q3">
+          <div class="question-head">
+            <span class="spen-mod-heading lv-3"><span class="heading-text question-num">問3</span></span>
+            <span class="badge badge-ok">Classi展開選択</span>
+          </div>
+          <p class="section-body question-prompt">図形と方程式において、点 (0, 0) を中心とする半径 5 の円の方程式の定数項側 (ア) を選びなさい。</p>
+          <div class="answer-selector">
+            <span class="label-text" style="font-weight: 700; margin-right: 8px;">ア</span>
+            <div class="question-selector" style="display: inline-block;">
+              <image-selector>
+                <div class="image-select-label" id="imgsel-trigger">選択してください</div>
+                <div class="image-select-box" id="imgsel-box">
+                  <ul class="option-list">
+                    <li data-val="5">5</li>
+                    <li data-val="10">10</li>
+                    <li data-val="25">25</li>
+                  </ul>
+                </div>
+              </image-selector>
+            </div>
+            <div id="imgsel-picked" style="margin-top: 6px; font-size: 0.85rem; color: var(--text-muted);">未選択</div>
+          </div>
+        </section>
+
+        <!-- 4. 画像付き + Classi風 fill-in-text 記述問題 -->
+        <section class="glass-panel spen-ly-question-section" data-question-id="c-q4">
+          <div class="question-head">
+            <span class="spen-mod-heading lv-3"><span class="heading-text question-num">問4</span></span>
+            <span class="badge badge-ok">画像付き・記述式</span>
+          </div>
+          <p class="section-body question-prompt">下の許可済みグラフ図において、頂点の x 座標 (イ) を半角数字で記入しなさい。</p>
+          <div class="figure-box">
+            <img
+              data-image-id="fig-parabola"
+              data-ai-approved="true"
+              alt="頂点が(2, 3)で下に凸の放物線グラフ"
+              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='110'><path d='M 20 20 Q 90 110 160 20' fill='none' stroke='%230a66c2' stroke-width='2.5'/><circle cx='90' cy='65' r='3.5' fill='%230a66c2'/><text x='96' y='68' font-size='11'>(2, 3)</text></svg>"
+            />
+          </div>
+          <div class="figure-box">
+            <img
+              data-image-id="fig-student-memo"
+              data-ai-approved="false"
+              alt="個人情報メモ（外部送信禁止）"
+              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='36'><text x='8' y='22' font-size='11'>Private Student Memo</text></svg>"
+            />
+          </div>
+          <fill-in-text>
+            <div class="answer-selector">
+              <span class="label-text" style="font-weight: 700; margin-right: 8px;">イ</span>
+              <span class="question-selector">
+                <input type="text" class="spen-mod-input-text" name="c-q4" placeholder="解答を入力" />
+              </span>
+            </div>
+          </fill-in-text>
+        </section>
+      </div>
+
+      <footer class="glass-panel action-footer">
+        <span style="font-size: 0.9rem; color: var(--text-secondary);">第1ページの回答確認後、第2ページへ進みます。</span>
+        <a id="next-page-btn" data-next-page="true" href="comprehensive_page2.html" class="btn btn-primary">次のページへ進む</a>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const trigger = document.getElementById("imgsel-trigger");
+      const box = document.getElementById("imgsel-box");
+      const picked = document.getElementById("imgsel-picked");
+      trigger.addEventListener("click", function () {
+        box.classList.toggle("open");
+      });
+      box.querySelectorAll("li").forEach(function (li) {
+        li.addEventListener("click", function () {
+          const val = li.textContent.trim();
+          trigger.textContent = val;
+          picked.textContent = "選択済み: " + val;
+          picked.dataset.selected = val;
+          box.classList.remove("open");
+          sessionStorage.setItem("comp_q3", val);
+        });
+      });
+
+      document.getElementById("next-page-btn").addEventListener("click", function () {
+        const q1 = document.querySelector('input[name="c-q1"]:checked')?.value || "";
+        const q2 = Array.from(document.querySelectorAll('input[name="c-q2"]:checked')).map((el) => el.value);
+        const q3 = document.getElementById("imgsel-picked").dataset.selected || "";
+        const q4 = document.querySelector('input[name="c-q4"]')?.value.trim() || "";
+        sessionStorage.setItem("comp_p1_answers", JSON.stringify({ "c-q1": q1, "c-q2": q2, "c-q3": q3, "c-q4": q4 }));
+      });
+    })();
+  </script>
+</body>
+</html>

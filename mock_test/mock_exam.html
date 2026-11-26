@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>自作模擬テスト：情報I 基礎演習 | Muse Learning Bridge</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="glass-bar">
+      <div class="brand-group">
+        <a href="index.html" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">戻る</a>
+        <p class="brand-title">自作模擬テスト</p>
+      </div>
+      <div class="user-pill">
+        <span>受験者: デモ学習者（DEMO-001）</span>
+      </div>
+    </header>
+
+    <main
+      id="material-root"
+      data-material-id="mat-mock-01"
+      data-material-name="自作模擬テスト：情報I 基礎演習"
+      data-material-category="mock_test"
+      data-ai-allowed="true"
+      data-auto-submit-allowed="true"
+      data-permission-note="動作検証用の自作模擬テスト（自動入力・採点画面遷移を許可）"
+    >
+      <div class="page-header">
+        <h1>情報I 基礎演習（自作模擬テスト）</h1>
+        <div class="badge-row">
+          <span class="badge badge-ok">AI利用許可済み</span>
+          <span class="badge badge-ok">自動解答・提出許可</span>
+        </div>
+      </div>
+
+      <form id="mock-exam-form" class="question-stack">
+        <article class="glass-panel question-card" data-question-id="m-q1" data-question-number="問1" data-question-format="single_choice">
+          <div class="question-head">
+            <span class="question-num">問1</span>
+            <span class="badge badge-ok">単一選択</span>
+          </div>
+          <p class="question-prompt">1バイトは何ビットで構成されるか。</p>
+          <div class="choice-list">
+            <label class="choice-option"><input type="radio" name="m-q1" value="4" /> <span>4</span></label>
+            <label class="choice-option"><input type="radio" name="m-q1" value="8" /> <span>8</span></label>
+            <label class="choice-option"><input type="radio" name="m-q1" value="16" /> <span>16</span></label>
+            <label class="choice-option"><input type="radio" name="m-q1" value="32" /> <span>32</span></label>
+          </div>
+        </article>
+
+        <article class="glass-panel question-card" data-question-id="m-q2" data-question-number="問2" data-question-format="dropdown">
+          <div class="question-head">
+            <span class="question-num">問2</span>
+            <span class="badge badge-ok">プルダウン</span>
+          </div>
+          <p class="question-prompt">HTTPS通信においてデータを暗号化するために用いられるプロトコルはどれか。</p>
+          <select name="m-q2" class="select-input">
+            <option value="">選択してください</option>
+            <option value="FTP">FTP</option>
+            <option value="TLS">TLS</option>
+            <option value="ICMP">ICMP</option>
+          </select>
+        </article>
+
+        <article class="glass-panel question-card" data-question-id="m-q3" data-question-number="問3" data-question-format="multiple_choice">
+          <div class="question-head">
+            <span class="question-num">問3</span>
+            <span class="badge badge-ok">複数選択</span>
+          </div>
+          <p class="question-prompt">公開鍵暗号方式の特徴として適切なものをすべて選びなさい。</p>
+          <div class="choice-list">
+            <label class="choice-option"><input type="checkbox" name="m-q3" value="暗号化と復号で異なる鍵を用いる" /> <span>暗号化と復号で異なる鍵を用いる</span></label>
+            <label class="choice-option"><input type="checkbox" name="m-q3" value="公開鍵は第三者に公開できる" /> <span>公開鍵は第三者に公開できる</span></label>
+            <label class="choice-option"><input type="checkbox" name="m-q3" value="共通鍵と同じ鍵を全員で共有する" /> <span>共通鍵と同じ鍵を全員で共有する</span></label>
+          </div>
+        </article>
+
+        <footer class="glass-panel action-footer">
+          <span style="font-size: 0.9rem; color: var(--text-secondary);">すべての設問に解答後、採点画面へ進めます。</span>
+          <button type="submit" id="submit-exam-btn" class="btn btn-primary">解答を提出して採点する</button>
+        </footer>
+      </form>
+
+      <!-- 採点・結果画面 -->
+      <section id="result-screen" class="glass-panel result-panel" aria-live="polite">
+        <h2 style="margin-top: 0;">採点結果</h2>
+        <div class="score-summary">
+          <div class="score-main" id="score-display">0 / 3 問正解</div>
+          <span class="badge badge-ok" id="score-rate">正答率 0%</span>
+        </div>
+        <div id="result-breakdown" class="question-stack"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const ANSWER_KEY = {
+        "m-q1": ["8"],
+        "m-q2": ["TLS"],
+        "m-q3": ["暗号化と復号で異なる鍵を用いる", "公開鍵は第三者に公開できる"]
+      };
+
+      const form = document.getElementById("mock-exam-form");
+      const resultScreen = document.getElementById("result-screen");
+      const scoreDisplay = document.getElementById("score-display");
+      const scoreRate = document.getElementById("score-rate");
+      const breakdown = document.getElementById("result-breakdown");
+
+      function setsEqual(a, b) {
+        if (a.length !== b.length) return false;
+        const sa = new Set(a);
+        return b.every((v) => sa.has(v));
+      }
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const q1 = Array.from(document.querySelectorAll('input[name="m-q1"]:checked')).map((el) => el.value);
+        const q2Val = document.querySelector('select[name="m-q2"]').value;
+        const q2 = q2Val ? [q2Val] : [];
+        const q3 = Array.from(document.querySelectorAll('input[name="m-q3"]:checked')).map((el) => el.value);
+
+        const submitted = { "m-q1": q1, "m-q2": q2, "m-q3": q3 };
+        let correctCount = 0;
+        breakdown.innerHTML = "";
+
+        Object.keys(ANSWER_KEY).forEach((qid, idx) => {
+          const expected = ANSWER_KEY[qid];
+          const actual = submitted[qid];
+          const isCorrect = setsEqual(actual, expected);
+          if (isCorrect) correctCount += 1;
+
+          const item = document.createElement("div");
+          item.className = "glass-panel";
+          item.style.padding = "14px";
+          item.innerHTML =
+            "<strong>問" + (idx + 1) + "</strong> : " +
+            (isCorrect ? '<span class="badge badge-ok">正解</span>' : '<span class="badge badge-block">不正解</span>') +
+            '<div style="margin-top:6px; font-size:0.9rem;">解答: ' + (actual.join(", ") || "未回答") + " / 正答: " + expected.join(", ") + "</div>";
+          breakdown.appendChild(item);
+        });
+
+        const total = Object.keys(ANSWER_KEY).length;
+        const pct = Math.round((correctCount / total) * 100);
+        scoreDisplay.textContent = correctCount + " / " + total + " 問正解";
+        scoreRate.textContent = "正答率 " + pct + "%";
+        resultScreen.classList.add("visible");
+        resultScreen.dataset.graded = "true";
+        resultScreen.dataset.score = String(correctCount);
+      });
+    })();
+  </script>
+</body>
+</html>

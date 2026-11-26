@@ -1,0 +1,427 @@
+/* Muse Learning Bridge 自作模擬テスト用 共通スタイルシート */
+:root {
+  --bg-canvas: #eef3f8;
+  --bg-mesh-1: radial-gradient(circle at 12% 18%, rgba(14, 116, 214, 0.14), transparent 46%);
+  --bg-mesh-2: radial-gradient(circle at 86% 12%, rgba(56, 189, 248, 0.14), transparent 42%);
+  --bg-mesh-3: radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.08), transparent 48%);
+  --glass-surface: rgba(255, 255, 255, 0.72);
+  --glass-surface-strong: rgba(255, 255, 255, 0.86);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-edge: rgba(15, 23, 42, 0.08);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --accent: #0a66c2;
+  --accent-hover: #08529c;
+  --accent-soft: rgba(10, 102, 194, 0.1);
+  --status-ok: #047857;
+  --status-ok-bg: rgba(4, 120, 87, 0.11);
+  --status-warn: #b45309;
+  --status-warn-bg: rgba(180, 83, 9, 0.11);
+  --status-block: #b91c1c;
+  --status-block-bg: rgba(185, 28, 28, 0.11);
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --radius-pill: 999px;
+  --shadow-glass: 0 14px 36px rgba(15, 23, 42, 0.07);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(10, 102, 194, 0.2);
+  color: var(--text-primary);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", system-ui, -apple-system, sans-serif;
+  color: var(--text-primary);
+  background-color: var(--bg-canvas);
+  background-image: var(--bg-mesh-1), var(--bg-mesh-2), var(--bg-mesh-3);
+  background-attachment: fixed;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 28px 20px 64px;
+}
+
+.glass-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  border-radius: var(--radius-card);
+  background: var(--glass-surface-strong);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--shadow-glass);
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.brand-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--glass-edge);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.page-header {
+  margin: 28px 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.flow-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.glass-panel {
+  background: var(--glass-surface);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  box-shadow: var(--shadow-glass);
+}
+
+.metric-value {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+
+.metric-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.material-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 16px;
+}
+
+.material-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease;
+}
+
+.material-item:hover {
+  transform: translateY(-2px);
+  background: var(--glass-surface-strong);
+}
+
+.material-title {
+  margin: 0 0 8px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.badge-ok {
+  color: var(--status-ok);
+  background: var(--status-ok-bg);
+}
+
+.badge-warn {
+  color: var(--status-warn);
+  background: var(--status-warn-bg);
+}
+
+.badge-block {
+  color: var(--status-block);
+  background: var(--status-block-bg);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+  font-size: 0.925rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.16s ease, transform 0.12s ease;
+}
+
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary);
+  border-color: var(--glass-edge);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #ffffff;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.question-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.question-card {
+  padding: 22px;
+}
+
+.question-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.question-num {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.question-prompt {
+  margin: 0 0 14px;
+  font-size: 1rem;
+  max-width: 72ch;
+}
+
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choice-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--glass-edge);
+  cursor: pointer;
+}
+
+.choice-option:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.text-input,
+.select-input,
+.textarea-input {
+  width: 100%;
+  max-width: 560px;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.figure-box {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: var(--radius-control);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--glass-edge);
+  display: inline-block;
+}
+
+.ai-draft-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  display: none;
+}
+
+.ai-draft-note.visible {
+  display: block;
+}
+
+.action-footer {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.result-panel {
+  margin-top: 24px;
+  display: none;
+}
+
+.result-panel.visible {
+  display: block;
+}
+
+.score-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 12px 0 18px;
+}
+
+.score-main {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.login-box {
+  max-width: 420px;
+  margin: 48px auto;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.form-field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.error-banner {
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  background: var(--status-block-bg);
+  color: var(--status-block);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: none;
+}
+
+.error-banner.visible {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 16px 14px 48px;
+  }
+  .page-header h1 {
+    font-size: 1.4rem;
+  }
+}

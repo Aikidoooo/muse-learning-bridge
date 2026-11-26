@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>英語・数学 総合練習ドリル | Muse Learning Bridge</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="glass-bar">
+      <div class="brand-group">
+        <a href="index.html" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">戻る</a>
+        <p class="brand-title">練習教材</p>
+      </div>
+      <div class="user-pill">
+        <span>受験者: デモ学習者（DEMO-001 / demo-student@example.invalid）</span>
+      </div>
+    </header>
+
+    <main
+      id="material-root"
+      data-material-id="mat-practice-01"
+      data-material-name="英語・数学 総合練習ドリル"
+      data-material-category="practice"
+      data-ai-allowed="true"
+      data-auto-submit-allowed="false"
+      data-permission-note="学校により復習・練習用としてAI支援利用が許可された教材"
+    >
+      <div class="page-header">
+        <h1>英語・数学 総合練習ドリル</h1>
+        <div class="badge-row">
+          <span class="badge badge-ok">AI利用許可済み</span>
+          <span class="badge badge-warn">下書き確認のみ（自動提出不可）</span>
+        </div>
+      </div>
+
+      <div class="question-stack">
+        <!-- 問1: 単一選択 -->
+        <article class="glass-panel question-card" data-question-id="p-q1" data-question-number="問1" data-question-format="single_choice">
+          <div class="question-head">
+            <span class="question-num">問1</span>
+            <span class="badge badge-ok">単一選択</span>
+          </div>
+          <p class="question-prompt">次の英文の空欄に入る最も適切な語を選びなさい。 She (　　) to Kyoto last week.</p>
+          <div class="choice-list">
+            <label class="choice-option"><input type="radio" name="p-q1" value="go" /> <span>go</span></label>
+            <label class="choice-option"><input type="radio" name="p-q1" value="goes" /> <span>goes</span></label>
+            <label class="choice-option"><input type="radio" name="p-q1" value="went" /> <span>went</span></label>
+            <label class="choice-option"><input type="radio" name="p-q1" value="going" /> <span>going</span></label>
+          </div>
+          <div class="ai-draft-note" data-draft-for="p-q1"></div>
+        </article>
+
+        <!-- 問2: 複数選択 -->
+        <article class="glass-panel question-card" data-question-id="p-q2" data-question-number="問2" data-question-format="multiple_choice">
+          <div class="question-head">
+            <span class="question-num">問2</span>
+            <span class="badge badge-ok">複数選択</span>
+          </div>
+          <p class="question-prompt">10以下の素数をすべて選びなさい。</p>
+          <div class="choice-list">
+            <label class="choice-option"><input type="checkbox" name="p-q2" value="2" /> <span>2</span></label>
+            <label class="choice-option"><input type="checkbox" name="p-q2" value="3" /> <span>3</span></label>
+            <label class="choice-option"><input type="checkbox" name="p-q2" value="4" /> <span>4</span></label>
+            <label class="choice-option"><input type="checkbox" name="p-q2" value="5" /> <span>5</span></label>
+            <label class="choice-option"><input type="checkbox" name="p-q2" value="7" /> <span>7</span></label>
+          </div>
+          <div class="ai-draft-note" data-draft-for="p-q2"></div>
+        </article>
+
+        <!-- 問3: プルダウン -->
+        <article class="glass-panel question-card" data-question-id="p-q3" data-question-number="問3" data-question-format="dropdown">
+          <div class="question-head">
+            <span class="question-num">問3</span>
+            <span class="badge badge-ok">プルダウン</span>
+          </div>
+          <p class="question-prompt">二次関数 y = (x - 2)^2 + 5 の頂点の座標を選びなさい。</p>
+          <select name="p-q3" class="select-input">
+            <option value="">選択してください</option>
+            <option value="(-2, 5)">(-2, 5)</option>
+            <option value="(2, 5)">(2, 5)</option>
+            <option value="(2, -5)">(2, -5)</option>
+          </select>
+          <div class="ai-draft-note" data-draft-for="p-q3"></div>
+        </article>
+
+        <!-- 問4: 許可済み画像 + 未許可画像の混在 + 記述式 -->
+        <article class="glass-panel question-card" data-question-id="p-q4" data-question-number="問4" data-question-format="short_text">
+          <div class="question-head">
+            <span class="question-num">問4</span>
+            <span class="badge badge-ok">記述式</span>
+          </div>
+          <p class="question-prompt">直角三角形の2辺が 3cm と 4cm のとき、斜辺の長さは何cmか答えなさい。</p>
+          <div class="figure-box">
+            <img
+              data-image-id="fig-triangle"
+              data-ai-approved="true"
+              alt="底辺4cm・高さ3cmの直角三角形"
+              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='110'><polygon points='20,90 130,90 20,20' fill='none' stroke='%230a66c2' stroke-width='2'/><text x='70' y='105' font-size='12'>4cm</text><text x='2' y='60' font-size='12'>3cm</text></svg>"
+            />
+          </div>
+          <div class="figure-box">
+            <img
+              data-image-id="fig-private-memo"
+              data-ai-approved="false"
+              alt="生徒の手書きメモ（AI送信不可）"
+              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='40'><text x='8' y='24' font-size='12'>Private Note</text></svg>"
+            />
+          </div>
+          <textarea name="p-q4" class="textarea-input" rows="2" placeholder="解答を入力"></textarea>
+          <div class="ai-draft-note" data-draft-for="p-q4"></div>
+        </article>
+      </div>
+
+      <footer class="glass-panel action-footer">
+        <span style="font-size: 0.9rem; color: var(--text-secondary);">練習教材のため、最終確認は学習者自身が行います。</span>
+        <button type="button" class="btn btn-primary" id="submit-practice-btn" disabled>提出（自動提出無効）</button>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

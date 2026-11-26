@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>学習支援ポータル | Muse Learning Bridge 模擬環境</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="glass-bar">
+      <div class="brand-group">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+          </svg>
+        </div>
+        <p class="brand-title">Classi 模擬学習ポータル</p>
+      </div>
+      <div class="user-pill" id="user-badge" style="display: none;">
+        <span id="logged-in-user">デモ学習者（DEMO-001）</span>
+        <button type="button" class="btn btn-secondary" id="logout-btn" style="padding: 4px 10px; font-size: 0.78rem;">ログアウト</button>
+      </div>
+    </header>
+
+    <!-- 模擬ログイン画面（Muse側で認証を実施しPythonへ渡さないフローの検証用） -->
+    <section id="login-section" class="glass-panel login-box" aria-label="ポータルログイン">
+      <h1 style="margin-top: 0; font-size: 1.35rem;">学習ポータルへログイン</h1>
+      <div id="login-error" class="error-banner" role="alert"></div>
+      <form id="login-form">
+        <div class="form-field">
+          <label for="student-id">生徒ID</label>
+          <input id="student-id" class="text-input" type="text" value="DEMO-001" required />
+        </div>
+        <div class="form-field">
+          <label for="student-pass">パスワード</label>
+          <input id="student-pass" class="text-input" type="password" value="demo-pass-2026" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">ログイン</button>
+      </form>
+    </section>
+
+    <!-- ログイン後の教材ポータル -->
+    <main id="portal-section" style="display: none;">
+      <div class="page-header">
+        <h1>本日の学習フロー</h1>
+      </div>
+
+      <section class="flow-strip" aria-label="学習生産性とフロー状態">
+        <div class="glass-panel">
+          <div class="metric-label">学習フロー</div>
+          <div class="metric-value">演習 → 解析 → 確認</div>
+        </div>
+        <div class="glass-panel">
+          <div class="metric-label">AI利用許可教材</div>
+          <div class="metric-value" id="approved-count">2 件</div>
+        </div>
+        <div class="glass-panel">
+          <div class="metric-label">評価テスト保護</div>
+          <div class="metric-value">自動提出ブロック中</div>
+        </div>
+      </section>
+
+      <section class="material-list" aria-label="教材一覧">
+        <article class="glass-panel material-item" data-material-id="mat-practice-01" data-ai-allowed="true">
+          <div>
+            <h2 class="material-title">英語・数学 総合練習ドリル</h2>
+            <div class="badge-row">
+              <span class="badge badge-ok">AI利用許可</span>
+              <span class="badge badge-warn">自動提出不可</span>
+            </div>
+          </div>
+          <a class="btn btn-primary" href="practice_quiz.html">教材を開く</a>
+        </article>
+
+        <article class="glass-panel material-item" data-material-id="mat-mock-01" data-ai-allowed="true">
+          <div>
+            <h2 class="material-title">自作模擬テスト：情報I 基礎演習</h2>
+            <div class="badge-row">
+              <span class="badge badge-ok">AI利用許可</span>
+              <span class="badge badge-ok">自動採点・提出可</span>
+            </div>
+          </div>
+          <a class="btn btn-primary" href="mock_exam.html">模擬テスト開始</a>
+        </article>
+
+        <article class="glass-panel material-item" data-material-id="mat-comp-p1" data-ai-allowed="true">
+          <div>
+            <h2 class="material-title">Classi互換 総合模擬テスト</h2>
+            <div class="badge-row">
+              <span class="badge badge-ok">数式・画像・複数ページ</span>
+              <span class="badge badge-ok">自動採点・提出可</span>
+            </div>
+          </div>
+          <a class="btn btn-primary" href="comprehensive_exam.html">総合テスト開始</a>
+        </article>
+
+        <article class="glass-panel material-item" data-material-id="mat-school-exam-01" data-ai-allowed="false">
+          <div>
+            <h2 class="material-title">期末確認テスト（学校評価対象）</h2>
+            <div class="badge-row">
+              <span class="badge badge-block">AI利用不許可</span>
+              <span class="badge badge-block">自動処理対象外</span>
+            </div>
+          </div>
+          <a class="btn btn-secondary" href="restricted_test.html">詳細を確認</a>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const SESSION_KEY = "muse_mock_portal_session";
+      const loginSection = document.getElementById("login-section");
+      const portalSection = document.getElementById("portal-section");
+      const userBadge = document.getElementById("user-badge");
+      const loggedUserEl = document.getElementById("logged-in-user");
+      const loginForm = document.getElementById("login-form");
+      const loginError = document.getElementById("login-error");
+      const logoutBtn = document.getElementById("logout-btn");
+
+      function renderAuthState() {
+        const raw = sessionStorage.getItem(SESSION_KEY);
+        if (raw) {
+          const user = JSON.parse(raw);
+          loggedUserEl.textContent = "デモ学習者（" + user.studentId + "）";
+          userBadge.style.display = "inline-flex";
+          loginSection.style.display = "none";
+          portalSection.style.display = "block";
+        } else {
+          userBadge.style.display = "none";
+          loginSection.style.display = "block";
+          portalSection.style.display = "none";
+        }
+      }
+
+      loginForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const sid = document.getElementById("student-id").value.trim();
+        const pwd = document.getElementById("student-pass").value.trim();
+        if (!sid || pwd.length < 4) {
+          loginError.textContent = "正しい生徒IDとパスワードを入力してください。";
+          loginError.classList.add("visible");
+          return;
+        }
+        loginError.classList.remove("visible");
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ studentId: sid, loggedInAt: Date.now() }));
+        renderAuthState();
+      });
+
+      logoutBtn.addEventListener("click", function () {
+        sessionStorage.removeItem(SESSION_KEY);
+        renderAuthState();
+      });
+
+      renderAuthState();
+    })();
+  </script>
+</body>
+</html>

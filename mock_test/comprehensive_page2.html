@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>総合模擬テスト（2ページ目・採点） | Muse Learning Bridge</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="glass-bar">
+      <div class="brand-group">
+        <a href="comprehensive_exam.html" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">第1ページへ</a>
+        <p class="brand-title">総合模擬テスト（Page 2 / 2）</p>
+      </div>
+      <div class="user-pill">
+        <span>受験者: デモ学習者（DEMO-001）</span>
+      </div>
+    </header>
+
+    <main
+      id="material-root"
+      data-material-id="mat-comp-p2"
+      data-material-name="Classi互換 総合模擬テスト（第2ページ・最終採点）"
+      data-material-category="mock_test"
+      data-ai-allowed="true"
+      data-auto-submit-allowed="true"
+      data-permission-note="拡張機能非依存のPython抽出エンジン検証用・自動解答および最終採点許可済み"
+    >
+      <div class="page-header">
+        <h1>総合模擬テスト（第2ページ）</h1>
+        <div class="badge-row">
+          <span class="badge badge-ok">AI利用許可済み</span>
+          <span class="badge badge-ok">最終採点画面あり</span>
+        </div>
+      </div>
+
+      <form id="comp-p2-form" class="question-stack">
+        <article class="glass-panel question-card" data-question-id="c-q5" data-question-number="問5" data-question-format="essay">
+          <div class="question-head">
+            <span class="question-num">問5</span>
+            <span class="badge badge-ok">記述・短答説明</span>
+          </div>
+          <p class="question-prompt">HTTP通信ではなくHTTPS通信を用いる主なセキュリティ上の理由を「暗号化」という語を含めて簡潔に記述しなさい。</p>
+          <textarea name="c-q5" class="textarea-input" rows="4" placeholder="解答を入力してください"></textarea>
+        </article>
+
+        <footer class="glass-panel action-footer">
+          <span style="font-size: 0.9rem; color: var(--text-secondary);">第1・第2ページの全問を集計して採点します。</span>
+          <button type="submit" id="submit-exam-btn" class="btn btn-primary">総合テストを提出して採点する</button>
+        </footer>
+      </form>
+
+      <section id="result-screen" class="glass-panel result-panel" aria-live="polite">
+        <h2 style="margin-top: 0;">総合模擬テスト 採点結果</h2>
+        <div class="score-summary">
+          <div class="score-main" id="score-display">0 / 5 問正解</div>
+          <span class="badge badge-ok" id="score-rate">正答率 0%</span>
+        </div>
+        <div id="result-breakdown" class="question-stack"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const form = document.getElementById("comp-p2-form");
+      const resultScreen = document.getElementById("result-screen");
+      const scoreDisplay = document.getElementById("score-display");
+      const scoreRate = document.getElementById("score-rate");
+      const breakdown = document.getElementById("result-breakdown");
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const p1Raw = sessionStorage.getItem("comp_p1_answers");
+        const p1 = p1Raw ? JSON.parse(p1Raw) : {};
+        const q5 = document.querySelector('textarea[name="c-q5"]').value.trim();
+
+        const checks = [
+          { num: "問1", ok: p1["c-q1"] === "3", detail: p1["c-q1"] || "未回答", exp: "3" },
+          {
+            num: "問2",
+            ok: Array.isArray(p1["c-q2"]) && p1["c-q2"].length === 2 && p1["c-q2"].includes("2") && p1["c-q2"].includes("3"),
+            detail: (p1["c-q2"] || []).join(", ") || "未回答",
+            exp: "2, 3"
+          },
+          { num: "問3", ok: p1["c-q3"] === "25", detail: p1["c-q3"] || "未回答", exp: "25" },
+          { num: "問4", ok: p1["c-q4"] === "2", detail: p1["c-q4"] || "未回答", exp: "2" },
+          { num: "問5", ok: q5.includes("暗号化"), detail: q5 || "未回答", exp: "「暗号化」を含む記述" }
+        ];
+
+        let score = 0;
+        breakdown.innerHTML = "";
+        checks.forEach((c) => {
+          if (c.ok) score += 1;
+          const div = document.createElement("div");
+          div.className = "glass-panel";
+          div.style.padding = "12px 14px";
+          div.innerHTML =
+            "<strong>" + c.num + "</strong> : " +
+            (c.ok ? '<span class="badge badge-ok">正解</span>' : '<span class="badge badge-block">不正解</span>') +
+            '<div style="margin-top:4px; font-size:0.9rem;">入力: ' + c.detail + " / 基準: " + c.exp + "</div>";
+          breakdown.appendChild(div);
+        });
+
+        const pct = Math.round((score / checks.length) * 100);
+        scoreDisplay.textContent = score + " / " + checks.length + " 問正解";
+        scoreRate.textContent = "正答率 " + pct + "%";
+        resultScreen.classList.add("visible");
+        resultScreen.dataset.graded = "true";
+        resultScreen.dataset.score = String(score);
+      });
+    })();
+  </script>
+</body>
+</html>

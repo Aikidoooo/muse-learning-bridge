@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  secret-scan:
+    name: Secret and PII Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check forbidden files and secret patterns
+        run: |
+          set -e
+          if [ -f ".env" ]; then
+            echo "ERROR: .env file must not be committed"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import re, sys
+          from pathlib import Path
+
+          patterns = [
+              re.compile(r"AIza[0-9A-Za-z\-_]{20,}"),
+              re.compile(r"sk-ant-[A-Za-z0-9_\-]{12,}"),
+              re.compile(r"sk-proj-[A-Za-z0-9_\-]{12,}"),
+          ]
+          # テストファイル内の明示的ダミー文字列（Dummy/Test等）は除外して本番秘密鍵パターンを検査
+          allow_markers = ("Dummy", "dummy", "TestKey", "test-api-key", "supersecret", "example", "Bad", "bad", "phase9", "header-injected", "runtime-secret", "job-iso", "VerifySecret", "verify-compat", "invalid")
+          bad = []
+          for path in Path(".").rglob("*"):
+              if not path.is_file():
+                  continue
+              if any(p in path.parts for p in (".git", ".venv", "__pycache__", ".pytest_cache")):
+                  continue
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  continue
+              for idx, line in enumerate(text.splitlines(), 1):
+                  for pat in patterns:
+                      for m in pat.finditer(line):
+                          token = m.group(0)
+                          if not any(a in line for a in allow_markers):
+                              bad.append(f"{path}:{idx}: {token[:10]}...")
+          if bad:
+              print("Potential secrets detected:\n" + "\n".join(bad))
+              sys.exit(1)
+          print("Secret scan passed cleanly.")
+          PY
+
+  test-linux:
+    name: Linux Install & Pytest (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run install.sh (idempotency check x2)
+        run: |
+          chmod +x install.sh start.sh
+          ./install.sh
+          ./install.sh
+      - name: Run full pytest suite
+        run: |
+          ./.venv/bin/python -m pytest -v
+
+  test-windows:
+    name: Windows Pytest
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies and Playwright Chromium
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+          .\.venv\Scripts\playwright.exe install chromium
+      - name: Run full pytest suite
+        run: |
+          .\.venv\Scripts\python.exe -m pytest -v

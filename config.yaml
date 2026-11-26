@@ -1,0 +1,94 @@
+app:
+  name: "Muse Learning Bridge"
+  version: "1.0.0"
+  environment: "local"
+  host: "127.0.0.1"
+  port: 8765
+  data_dir: "data"
+  logs_dir: "logs"
+  db_path: "data/muse_bridge.db"
+  log_level: "INFO"
+
+security:
+  # 学校からAI利用が許可された教材のみ処理対象とする
+  require_explicit_ai_approval: true
+  # 通常の学校評価対象テストでの自動解答・提出を禁止する
+  allow_auto_submit_only_for_permitted: true
+  # 認証情報・Cookie等の混入を検出した場合に拒否する
+  reject_credential_fields: true
+  # 外部AI APIへの通信はHTTPS必須（localhostのみローカル検証用にhttpを許可）
+  allow_http_for_localhost: true
+  # 予算上限（USD）
+  max_cost_per_job_usd: 0.50
+  max_daily_cost_usd: 5.00
+  # 1ジョブあたりの最大問題数
+  max_questions_per_job: 100
+  # ログ・レポートの個人情報マスキング
+  mask_pii_in_logs_and_reports: true
+
+retry:
+  # 一時的なAPI通信エラーの最大再試行回数
+  max_attempts: 3
+  base_delay_seconds: 1.0
+  max_delay_seconds: 8.0
+  timeout_seconds: 45.0
+
+providers:
+  default_provider: "gemini"
+  gemini:
+    enabled: true
+    display_name: "Google Gemini API"
+    default_model: "gemini-2.5-flash"
+    base_url: "https://generativelanguage.googleapis.com/v1beta"
+    api_key_env: "GEMINI_API_KEY"
+    models:
+      - "gemini-2.5-flash"
+      - "gemini-2.5-pro"
+      - "gemini-2.5-flash-lite"
+    input_cost_per_1m_usd: 0.15
+    output_cost_per_1m_usd: 0.60
+  deepseek:
+    enabled: true
+    display_name: "DeepSeek API"
+    default_model: "deepseek-chat"
+    base_url: "https://api.deepseek.com/v1"
+    api_key_env: "DEEPSEEK_API_KEY"
+    models:
+      - "deepseek-chat"
+      - "deepseek-reasoner"
+    input_cost_per_1m_usd: 0.27
+    output_cost_per_1m_usd: 1.10
+  openai:
+    enabled: true
+    display_name: "OpenAI API"
+    default_model: "gpt-4o-mini"
+    base_url: "https://api.openai.com/v1"
+    api_key_env: "OPENAI_API_KEY"
+    models:
+      - "gpt-4o-mini"
+      - "gpt-4o"
+      - "gpt-4.1-mini"
+    input_cost_per_1m_usd: 0.15
+    output_cost_per_1m_usd: 0.60
+  anthropic:
+    enabled: true
+    display_name: "Anthropic API"
+    default_model: "claude-3-5-haiku-latest"
+    base_url: "https://api.anthropic.com/v1"
+    api_key_env: "ANTHROPIC_API_KEY"
+    models:
+      - "claude-3-5-haiku-latest"
+      - "claude-3-7-sonnet-latest"
+    input_cost_per_1m_usd: 0.80
+    output_cost_per_1m_usd: 4.00
+  openai_compatible:
+    enabled: true
+    display_name: "OpenAI互換 API"
+    default_model: "local-model"
+    base_url: "http://localhost:11434/v1"
+    base_url_env: "OPENAI_COMPAT_BASE_URL"
+    api_key_env: "OPENAI_COMPAT_API_KEY"
+    models:
+      - "local-model"
+    input_cost_per_1m_usd: 0.0
+    output_cost_per_1m_usd: 0.0
