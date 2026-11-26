@@ -55,7 +55,13 @@ class ProviderCallResult(BaseModel):
     results: list[QuestionAnalysisResult]
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
+    thinking_tokens: int = Field(default=0, ge=0)
     total_tokens: int = Field(default=0, ge=0)
     estimated_cost_usd: float = Field(default=0.0, ge=0.0)
+    api_requests_count: int = Field(default=0, ge=0)
+    cache_hits: int = Field(default=0, ge=0)
+    local_solved_count: int = Field(default=0, ge=0)
+    deduplicated_count: int = Field(default=0, ge=0)
+    processing_time_seconds: float = Field(default=0.0, ge=0.0)
     raw_valid: bool = Field(default=True)
     warnings: list[str] = Field(default_factory=list)

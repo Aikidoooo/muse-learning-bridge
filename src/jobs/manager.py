@@ -10,6 +10,7 @@ import uuid
 
 import httpx
 
+from src.core.cache import OptimizationCacheStore
 from src.core.config import AppConfig
 from src.core.config_manager import ConfigManager
 from src.core.exceptions import (
@@ -18,9 +19,12 @@ from src.core.exceptions import (
     JobCancelledError,
     JobNotFoundError,
     MuseBridgeError,
+    PermissionDeniedError,
     ProviderNotFoundError,
 )
+from src.core.http_pool import HttpClientPool
 from src.core.logging_config import get_logger
+from src.core.rate_limit import AsyncRateLimiter
 from src.core.security import verify_material_permission
 from src.jobs.store import JobStore
 from src.providers.factory import create_provider
@@ -40,6 +44,9 @@ class JobManager:
         *,
         store: JobStore | None = None,
         report_generator: ReportGenerator | None = None,
+        cache_store: OptimizationCacheStore | None = None,
+        rate_limiter: AsyncRateLimiter | None = None,
+        http_pool: HttpClientPool | None = None,
     ) -> None:
         """ジョブマネージャーを初期化する。"""
         if isinstance(config, ConfigManager):
@@ -50,6 +57,11 @@ class JobManager:
             initial_cfg = config
 
         self.store = store or JobStore(initial_cfg.app.db_path)
+        self.cache_store = cache_store or OptimizationCacheStore(initial_cfg.app.db_path)
+        self.rate_limiter = rate_limiter or AsyncRateLimiter()
+        self.http_pool = http_pool or HttpClientPool(
+            timeout_seconds=initial_cfg.retry.timeout_seconds,
+        )
         self.report_generator = report_generator or ReportGenerator(
             initial_cfg.app.data_dir,
             mask_pii_enabled=initial_cfg.security.mask_pii_in_logs_and_reports,
@@ -147,6 +159,20 @@ class JobManager:
             cfg=snapshot_cfg,
             header_api_key=header_api_key,
         )
+
+        # 有料API利用保護（ユーザー明示許可なしでは有料枠プロバイダーを事前遮断）
+        entry_cfg = snapshot_cfg.providers.get_provider_config(provider_name.value)
+        allow_paid = (
+            material.allow_paid_api
+            if material.allow_paid_api is not None
+            else snapshot_cfg.security.allow_paid_api
+        )
+        if entry_cfg is not None and entry_cfg.billing_tier == "paid" and not allow_paid:
+            raise PermissionDeniedError(
+                f"プロバイダー '{provider_name.value}' は有料APIのため、許可なく使用できません（allow_paid_api=true の明示許可が必要です）。",
+                code="PAID_API_APPROVAL_REQUIRED",
+                details={"provider": provider_name.value, "billing_tier": entry_cfg.billing_tier},
+            )
 
         # 日次予算の上限チェック
         today_cost = self.store.get_today_cost_usd()
@@ -253,6 +279,15 @@ class JobManager:
                 provider_kwargs["api_key_override"] = header_key
                 provider_kwargs["secret_store"] = self.config_manager.secret_store
             provider = create_provider(job_cfg, **provider_kwargs)
+            # テスト用のcreate_providerモックと後方互換性を保ちつつ最適化リソースを注入
+            if hasattr(provider, "cache_store") and getattr(provider, "cache_store", None) is None:
+                provider.cache_store = self.cache_store
+            if hasattr(provider, "rate_limiter") and getattr(provider, "rate_limiter", None) is None:
+                provider.rate_limiter = self.rate_limiter
+            if hasattr(provider, "_http_pool") and getattr(provider, "_http_pool", None) is None:
+                provider._http_pool = self.http_pool
+            if hasattr(provider, "job_id") and getattr(provider, "job_id", None) is None:
+                provider.job_id = job_id
 
             # 2. READY
             self._check_cancelled(job_id)
@@ -295,8 +330,13 @@ class JobManager:
             usage = TokenUsage(
                 input_tokens=provider_result.input_tokens,
                 output_tokens=provider_result.output_tokens,
+                thinking_tokens=provider_result.thinking_tokens,
                 total_tokens=provider_result.total_tokens,
                 estimated_cost_usd=provider_result.estimated_cost_usd,
+                api_requests_count=provider_result.api_requests_count,
+                cache_hits=provider_result.cache_hits,
+                local_solved_count=provider_result.local_solved_count,
+                provider_processing_time_seconds=provider_result.processing_time_seconds,
             )
             updated = self.store.update_status(
                 job_id,
@@ -347,11 +387,16 @@ class JobManager:
 
         except MuseBridgeError as exc:
             elapsed = time.monotonic() - started_monotonic
+            partial_saved = self.cache_store.get_partial_results(job_id)
+            details = dict(exc.details)
+            if partial_saved:
+                details["saved_partial_count"] = len(partial_saved)
+                details["resumable"] = True
             err = ErrorDetail(
                 code=exc.code,
                 message=exc.message,
                 retryable=exc.retryable,
-                details=exc.details,
+                details=details,
             )
             report = self.report_generator.build_report(
                 job_id=job_id,
@@ -366,6 +411,7 @@ class JobManager:
                 job_id,
                 JobStatus.FAILED,
                 mark_completed=True,
+                processed_questions=len(partial_saved) if partial_saved else None,
                 error=err,
                 report=report,
             )
@@ -470,3 +516,43 @@ class JobManager:
         )
         assert updated is not None
         return updated
+
+    async def resume_job(
+        self,
+        job_id: str,
+        *,
+        header_api_key: str | None = None,
+        http_client: httpx.AsyncClient | None = None,
+    ) -> JobStatusResponse:
+        """途中失敗またはキャンセルされたジョブについて、保存済み部分結果を再利用して未処理分だけ再実行する。"""
+        job = self.get_status(job_id)
+        if job.status in {JobStatus.COMPLETED, JobStatus.REVIEW_REQUIRED}:
+            return job
+        if header_api_key and header_api_key.strip():
+            self._job_header_keys[job_id] = header_api_key.strip()
+        return await self.execute_job(job_id, http_client=http_client)
+
+    def get_usage_summary(self, *, today_only: bool = True) -> dict:
+        """APIリクエスト回数・入出力/思考トークン数・モデル別処理時間・キャッシュ統計・無料枠状況を返す。"""
+        summary = self.cache_store.get_usage_summary(today_only=today_only)
+        cfg = self.config
+        quotas: dict[str, dict] = {}
+        for name, entry in cfg.providers.all_providers().items():
+            reqs_today, toks_today = self.cache_store.get_today_provider_requests(name)
+            quotas[name] = {
+                "billing_tier": entry.billing_tier,
+                "rpm_limit": entry.rpm_limit,
+                "tpm_limit": entry.tpm_limit,
+                "rpd_limit": entry.rpd_limit,
+                "today_requests": reqs_today,
+                "today_tokens": toks_today,
+                "remaining_rpd": max(0, entry.rpd_limit - reqs_today) if entry.rpd_limit > 0 else None,
+            }
+        summary["provider_quotas"] = quotas
+        summary["allow_paid_api"] = cfg.security.allow_paid_api
+        summary["enforce_free_tier_limits"] = cfg.security.enforce_free_tier_limits
+        return summary
+
+    async def aclose(self) -> None:
+        """共有HTTP接続プールをクローズする。"""
+        await self.http_pool.close()

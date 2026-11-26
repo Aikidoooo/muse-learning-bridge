@@ -35,6 +35,7 @@
 
 - **利用許可ゲート**: `ai_usage_approved: true` が明示されていない教材、および `school_assessment` カテゴリの自動提出要求は `PermissionDeniedError`（HTTP 403）で即停止します。
 - **画像送信制限**: `ai_usage_approved: true` の画像のみ外部 AI へ送信し、未許可画像は自動除外します。
-- **予算上限**: `max_cost_per_job_usd`（1 ジョブ上限）および `max_daily_cost_usd`（日次上限）を超過した場合は `BudgetExceededError` で停止します。
+- **予算上限・無料枠保護・有料APIガード**: `max_cost_per_job_usd`・`max_daily_cost_usd` の超過時は `BudgetExceededError` で停止します。さらに `billing_tier: "paid"` の有料プロバイダーは `allow_paid_api: true` の明示許可がない限り `PermissionDeniedError`（`PAID_API_APPROVAL_REQUIRED`）で遮断し、無料枠の `rpd_limit` 到達時は有料 API へ自動切替せず安全停止（`FREE_TIER_RPD_EXCEEDED`）します。
+- **エラー応答のマスキング**: 429 / 503 等の外部 API エラー JSON やヘッダを解析・ログ記録する際も `mask_secrets` を通してシークレットを自動マスキングします。
 - **プロンプトインジェクション対策**: 教材テキストはシステムプロンプトから隔離された `<untrusted_material_data>` ブロックとして渡し、Web ページ内の命令文をプログラムや AI への指示として解釈させません。
 - **制限回避の禁止**: CAPTCHA、多要素認証、クロスオリジン `iframe`、ブラウザのセキュリティ制限を回避する機能は一切実装しません。

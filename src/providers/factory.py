@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import httpx
 
+from src.core.cache import OptimizationCacheStore
 from src.core.config import AppConfig
 from src.core.exceptions import ProviderNotFoundError
+from src.core.http_pool import HttpClientPool
+from src.core.rate_limit import AsyncRateLimiter
 from src.providers.anthropic import AnthropicProvider
 from src.providers.base import BaseAIProvider
 from src.providers.deepseek import DeepSeekProvider
@@ -30,6 +33,10 @@ def create_provider(
     api_key_override: str | None = None,
     secret_store: object | None = None,
     http_client: httpx.AsyncClient | None = None,
+    cache_store: OptimizationCacheStore | None = None,
+    rate_limiter: AsyncRateLimiter | None = None,
+    http_pool: HttpClientPool | None = None,
+    job_id: str | None = None,
 ) -> BaseAIProvider:
     """設定と指定プロバイダー名から対応するAIプロバイダーインスタンスを生成する。"""
     raw_name = (
@@ -50,7 +57,6 @@ def create_provider(
             details={"provider": raw_name},
         )
 
-    # 組み込み名または provider_type から実行プロバイダークラスを決定
     raw_type = (entry_cfg.provider_type or raw_name).strip().lower()
     try:
         enum_type = ProviderName(raw_type)
@@ -68,4 +74,10 @@ def create_provider(
         allow_http_for_localhost=config.security.allow_http_for_localhost,
         mask_pii_before_send=config.security.mask_pii_in_logs_and_reports,
         http_client=http_client,
+        optimization_config=config.optimization,
+        security_config=config.security,
+        cache_store=cache_store,
+        rate_limiter=rate_limiter,
+        http_pool=http_pool,
+        job_id=job_id,
     )

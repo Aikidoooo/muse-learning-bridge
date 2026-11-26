@@ -1,4 +1,4 @@
-"""OpenAI API および OpenAI互換 API プロバイダー実装。"""
+"""OpenAI API および OpenAI互換 API プロバイダー実装（reasoning_effort最適化・思考トークン記録対応）。"""
 
 from __future__ import annotations
 
@@ -16,6 +16,11 @@ class OpenAIProvider(BaseAIProvider):
     provider_name = ProviderName.OPENAI
     require_api_key: bool = True
 
+    def _is_reasoning_model(self) -> bool:
+        """OpenAI推論系モデル（o1/o3/o4/gpt-5等）かを判定する。"""
+        m = self.model.lower()
+        return m.startswith(("o1", "o3", "o4", "gpt-5"))
+
     def _build_messages(self, material: MaterialInput) -> list[dict[str, Any]]:
         """Chat Completions用のメッセージ配列を構築する。"""
         user_content: list[dict[str, Any]] = [
@@ -25,7 +30,7 @@ class OpenAIProvider(BaseAIProvider):
             user_content.append(
                 {
                     "type": "text",
-                    "text": f"[利用許可画像: question_id={question_id}, image_id={img.image_id}]",
+                    "text": f"[img:{question_id}/{img.image_id}]",
                 }
             )
             user_content.append(
@@ -49,15 +54,22 @@ class OpenAIProvider(BaseAIProvider):
 
     def _build_request_payload(self, material: MaterialInput) -> dict[str, Any]:
         """送信JSONペイロードを構築する。"""
-        return {
+        payload: dict[str, Any] = {
             "model": self.model,
             "messages": self._build_messages(material),
-            "temperature": 0.1,
-            "max_tokens": self.compute_max_output_tokens(material),
             "response_format": {"type": "json_object"},
         }
+        if self._is_reasoning_model():
+            profile = self._resolve_thinking_profile(material)
+            effort_map = {"minimal": "low", "balanced": "medium", "high": "high"}
+            payload["reasoning_effort"] = effort_map.get(profile, "low")
+            payload["max_completion_tokens"] = self.compute_max_output_tokens(material)
+        else:
+            payload["temperature"] = 0.1
+            payload["max_tokens"] = self.compute_max_output_tokens(material)
+        return payload
 
-    async def _call_api(self, material: MaterialInput) -> tuple[str, int, int, int]:
+    async def _call_api(self, material: MaterialInput) -> tuple[str, int, int, int, int]:
         """Chat Completions APIを呼び出す。"""
         api_key = self._get_api_key(required=self.require_api_key)
         url = f"{self.base_url}/chat/completions"
@@ -80,8 +92,10 @@ class OpenAIProvider(BaseAIProvider):
         usage = data.get("usage", {})
         in_tok = int(usage.get("prompt_tokens", 0) or 0)
         out_tok = int(usage.get("completion_tokens", 0) or 0)
+        comp_details = usage.get("completion_tokens_details") or {}
+        think_tok = int(comp_details.get("reasoning_tokens", 0) or 0) if isinstance(comp_details, dict) else 0
         total_tok = int(usage.get("total_tokens", in_tok + out_tok) or 0)
-        return raw_text, in_tok, out_tok, total_tok
+        return raw_text, in_tok, out_tok, total_tok, think_tok
 
     async def list_remote_models(self) -> list[str]:
         """OpenAI互換 /models エンドポイントから利用可能なモデル一覧を取得する。"""
@@ -114,4 +128,5 @@ class OpenAICompatibleProvider(OpenAIProvider):
             "model": self.model,
             "messages": self._build_messages(material),
             "temperature": 0.1,
+            "max_tokens": self.compute_max_output_tokens(material),
         }

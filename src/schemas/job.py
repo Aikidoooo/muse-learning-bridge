@@ -11,12 +11,17 @@ from src.schemas.question import MaterialInput
 
 
 class TokenUsage(BaseModel):
-    """APIトークン使用量と推定コスト。"""
+    """APIトークン使用量・推定コスト・最適化効果メトリクス。"""
 
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
+    thinking_tokens: int = Field(default=0, ge=0)
     total_tokens: int = Field(default=0, ge=0)
     estimated_cost_usd: float = Field(default=0.0, ge=0.0)
+    api_requests_count: int = Field(default=0, ge=0)
+    cache_hits: int = Field(default=0, ge=0)
+    local_solved_count: int = Field(default=0, ge=0)
+    provider_processing_time_seconds: float = Field(default=0.0, ge=0.0)
 
 
 class ErrorDetail(BaseModel):

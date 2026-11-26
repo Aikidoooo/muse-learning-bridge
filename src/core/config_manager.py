@@ -71,6 +71,10 @@ class ConfigManager:
                 models=list(entry.models),
                 input_cost_per_1m_usd=entry.input_cost_per_1m_usd,
                 output_cost_per_1m_usd=entry.output_cost_per_1m_usd,
+                billing_tier=entry.billing_tier,
+                rpm_limit=entry.rpm_limit,
+                tpm_limit=entry.tpm_limit,
+                rpd_limit=entry.rpd_limit,
                 api_key_configured=configured,
                 credential_source=source,
             )
@@ -79,6 +83,7 @@ class ConfigManager:
             app=target.app.model_dump(mode="json"),
             security=target.security.model_dump(mode="json"),
             retry=target.retry.model_dump(mode="json"),
+            optimization=target.optimization.model_dump(mode="json"),
             default_provider=target.providers.default_provider,
             providers=providers_view,
         )
@@ -272,6 +277,10 @@ class ConfigManager:
                             input_cost_per_1m_usd=spec.input_cost_per_1m_usd or 0.0,
                             output_cost_per_1m_usd=spec.output_cost_per_1m_usd or 0.0,
                             provider_type=spec.provider_type or "openai_compatible",
+                            billing_tier=spec.billing_tier or "free",
+                            rpm_limit=15 if spec.rpm_limit is None else spec.rpm_limit,
+                            tpm_limit=250_000 if spec.tpm_limit is None else spec.tpm_limit,
+                            rpd_limit=1000 if spec.rpd_limit is None else spec.rpd_limit,
                         )
                         self._set_provider_entry(candidate, p_name, new_entry)
                     else:
@@ -299,6 +308,14 @@ class ConfigManager:
                             updated_entry.output_cost_per_1m_usd = spec.output_cost_per_1m_usd
                         if spec.provider_type is not None and not candidate.providers.is_builtin(p_name):
                             updated_entry.provider_type = spec.provider_type
+                        if spec.billing_tier is not None:
+                            updated_entry.billing_tier = spec.billing_tier
+                        if spec.rpm_limit is not None:
+                            updated_entry.rpm_limit = spec.rpm_limit
+                        if spec.tpm_limit is not None:
+                            updated_entry.tpm_limit = spec.tpm_limit
+                        if spec.rpd_limit is not None:
+                            updated_entry.rpd_limit = spec.rpd_limit
                         self._set_provider_entry(candidate, p_name, updated_entry)
 
                     test_target_provider = p_name
@@ -362,17 +379,29 @@ class ConfigManager:
                     test_target_model = entry.default_model
                     needs_connection_test = True
 
-                # 5. 料金上限・タイムアウト・リトライ設定
+                # 5. 料金上限・タイムアウト・リトライ・最適化設定
                 if patch.max_cost_per_job_usd is not None:
                     candidate.security.max_cost_per_job_usd = patch.max_cost_per_job_usd
                 if patch.max_daily_cost_usd is not None:
                     candidate.security.max_daily_cost_usd = patch.max_daily_cost_usd
                 if patch.max_questions_per_job is not None:
                     candidate.security.max_questions_per_job = patch.max_questions_per_job
+                if patch.allow_paid_api is not None:
+                    candidate.security.allow_paid_api = patch.allow_paid_api
+                if patch.enforce_free_tier_limits is not None:
+                    candidate.security.enforce_free_tier_limits = patch.enforce_free_tier_limits
                 if patch.timeout_seconds is not None:
                     candidate.retry.timeout_seconds = patch.timeout_seconds
                 if patch.max_attempts is not None:
                     candidate.retry.max_attempts = patch.max_attempts
+                if patch.thinking_mode is not None:
+                    candidate.optimization.thinking_mode = patch.thinking_mode
+                if patch.batch_size is not None:
+                    candidate.optimization.batch_size = patch.batch_size
+                if patch.max_concurrency is not None:
+                    candidate.optimization.max_concurrency = patch.max_concurrency
+                if patch.enable_cache is not None:
+                    candidate.optimization.enable_cache = patch.enable_cache
 
                 # 6. ヘッダ注入APIキーの揮発メモリ一時適用（ディスクには絶対書かない）
                 if header_api_key and header_api_key.strip() and patch.save_header_api_key_in_memory:

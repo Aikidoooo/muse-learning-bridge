@@ -57,8 +57,13 @@ class JobStore:
                     error_json TEXT,
                     input_tokens INTEGER NOT NULL DEFAULT 0,
                     output_tokens INTEGER NOT NULL DEFAULT 0,
+                    thinking_tokens INTEGER NOT NULL DEFAULT 0,
                     total_tokens INTEGER NOT NULL DEFAULT 0,
                     estimated_cost_usd REAL NOT NULL DEFAULT 0.0,
+                    api_requests_count INTEGER NOT NULL DEFAULT 0,
+                    cache_hits INTEGER NOT NULL DEFAULT 0,
+                    local_solved_count INTEGER NOT NULL DEFAULT 0,
+                    provider_processing_time_seconds REAL NOT NULL DEFAULT 0.0,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     started_at TEXT,
@@ -66,6 +71,21 @@ class JobStore:
                 )
                 """
             )
+            # 既存DBとの後方互換マイグレーション（不足カラムのみ安全追加）
+            existing_cols = {
+                str(r["name"])
+                for r in conn.execute("PRAGMA table_info(jobs)").fetchall()
+            }
+            migrations = [
+                ("thinking_tokens", "INTEGER NOT NULL DEFAULT 0"),
+                ("api_requests_count", "INTEGER NOT NULL DEFAULT 0"),
+                ("cache_hits", "INTEGER NOT NULL DEFAULT 0"),
+                ("local_solved_count", "INTEGER NOT NULL DEFAULT 0"),
+                ("provider_processing_time_seconds", "REAL NOT NULL DEFAULT 0.0"),
+            ]
+            for col_name, col_def in migrations:
+                if col_name not in existing_cols:
+                    conn.execute(f"ALTER TABLE jobs ADD COLUMN {col_name} {col_def}")
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_jobs_idempotency ON jobs(idempotency_key)"
             )
@@ -203,16 +223,26 @@ class JobStore:
                 [
                     "input_tokens = ?",
                     "output_tokens = ?",
+                    "thinking_tokens = ?",
                     "total_tokens = ?",
                     "estimated_cost_usd = ?",
+                    "api_requests_count = ?",
+                    "cache_hits = ?",
+                    "local_solved_count = ?",
+                    "provider_processing_time_seconds = ?",
                 ]
             )
             params.extend(
                 [
                     token_usage.input_tokens,
                     token_usage.output_tokens,
+                    token_usage.thinking_tokens,
                     token_usage.total_tokens,
                     token_usage.estimated_cost_usd,
+                    token_usage.api_requests_count,
+                    token_usage.cache_hits,
+                    token_usage.local_solved_count,
+                    token_usage.provider_processing_time_seconds,
                 ]
             )
         if error is not None:
@@ -268,8 +298,13 @@ class JobStore:
             token_usage=TokenUsage(
                 input_tokens=int(row["input_tokens"]),
                 output_tokens=int(row["output_tokens"]),
+                thinking_tokens=int(row["thinking_tokens"] or 0),
                 total_tokens=int(row["total_tokens"]),
                 estimated_cost_usd=float(row["estimated_cost_usd"]),
+                api_requests_count=int(row["api_requests_count"] or 0),
+                cache_hits=int(row["cache_hits"] or 0),
+                local_solved_count=int(row["local_solved_count"] or 0),
+                provider_processing_time_seconds=float(row["provider_processing_time_seconds"] or 0.0),
             ),
             error=error_obj,
         )

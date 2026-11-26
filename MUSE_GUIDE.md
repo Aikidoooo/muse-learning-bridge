@@ -7,7 +7,7 @@
 ## 1. GitHub リポジトリの取得
 
 ```bash
-git clone https://github.com/<OWNER>/muse-learning-bridge.git
+git clone https://github.com/Aikidoooo/muse-learning-bridge.git
 cd muse-learning-bridge
 ```
 
@@ -168,6 +168,19 @@ curl -s http://127.0.0.1:8765/jobs/<job_id>/result
 | `DUPLICATE_JOB` (409) | 同一教材・同一問題の二重実行 | 安全のためブロック済み。必要時は別の `idempotency_key` を指定 |
 | `BUDGET_EXCEEDED` (429) | 1 ジョブ / 日次予算上限超過 | `GET /config` で上限値と消費量を確認 |
 | `NETWORK_CONNECTION_ERROR` / `PROVIDER_TIMEOUT` (503/504) | 一時的な通信障害（最大 3 回自動再試行済み） | ネットワーク復旧後に再実行 |
+
+---
+
+### 使用量・モデル別処理時間・途中再開の確認（`v1.1.0`）
+
+```bash
+# API使用量・入力/出力/思考トークン・モデル別処理時間・無料枠残量の確認
+./.venv/bin/python main.py usage
+curl -s http://127.0.0.1:8765/usage
+
+# 途中失敗したジョブの保存済み部分結果を再利用して未処理分のみ再開
+curl -s -X POST "http://127.0.0.1:8765/jobs/<job_id>/resume?wait=true"
+```
 
 ---
 

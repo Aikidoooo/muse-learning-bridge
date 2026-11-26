@@ -86,6 +86,14 @@ class MaterialInput(BaseModel):
         default=None,
         description="二重実行防止用キー（未指定時は教材ID+問題ハッシュで自動生成）",
     )
+    allow_paid_api: bool | None = Field(
+        default=None,
+        description="有料API使用をこのジョブ単位で明示許可するか（未指定時はconfig.security.allow_paid_apiに従う）",
+    )
+    thinking_mode: str | None = Field(
+        default=None,
+        description="思考レベルのジョブ単位指定（auto / minimal / balanced / high）",
+    )
     questions: list[QuestionItem] = Field(
         ...,
         min_length=1,

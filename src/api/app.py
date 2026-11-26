@@ -179,6 +179,25 @@ def create_router(manager: JobManager, config_manager: ConfigManager) -> APIRout
         """指定されたジョブを中止する。"""
         return manager.cancel_job(job_id)
 
+    @router.post("/jobs/{job_id}/resume", response_model=JobStatusResponse, summary="保存済み部分結果から再開")
+    async def resume_job(
+        job_id: str,
+        wait: bool = Query(default=True, description="完了まで待機する場合はtrue"),
+        x_provider_api_key: str | None = Header(default=None),
+    ) -> JobStatusResponse:
+        """途中失敗または中止されたジョブの保存済み部分結果を再利用し、未処理分のみ再実行する。"""
+        if wait:
+            return await manager.resume_job(job_id, header_api_key=x_provider_api_key)
+        manager.start_background_job(job_id)
+        return manager.get_status(job_id)
+
+    @router.get("/usage", summary="API使用量・トークン・モデル別処理時間・無料枠状況取得")
+    async def get_usage(
+        today_only: bool = Query(default=True, description="trueでUTC本日分、falseで全期間"),
+    ) -> dict[str, Any]:
+        """APIリクエスト回数・入力/出力/思考トークン・モデル別処理時間・キャッシュ統計を返す。"""
+        return manager.get_usage_summary(today_only=today_only)
+
     @router.post(
         "/jobs/{job_id}/screenshots",
         response_model=MuseReport,

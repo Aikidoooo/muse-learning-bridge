@@ -48,7 +48,7 @@ OpenAPI スキーマ: `GET /openapi.json` / Swagger UI: `GET /docs`
 
 ### `GET /health`（認証不要）
 サーバー稼働状況を確認します。
-- **レスポンス (`200 OK`)**: `{"status": "ok", "app_name": "Muse Learning Bridge", "version": "1.0.0", "default_provider": "gemini"}`
+- **レスポンス (`200 OK`)**: `{"status": "ok", "app_name": "Muse Learning Bridge", "version": "1.1.0", "default_provider": "gemini"}`
 
 ### `GET /providers`（認証不要）
 登録済みプロバイダー（組み込み 5 種 + カスタム登録分）の一覧を返します。API キー文字列は含みません。
@@ -61,10 +61,10 @@ OpenAPI スキーマ: `GET /openapi.json` / Swagger UI: `GET /docs`
 プロバイダー登録・変更・削除、モデル名・デフォルト設定・予算上限・タイムアウト変更を実行します。変更対象プロバイダーへの接続テストが成功した場合のみ `config.yaml` へ保存・反映し、失敗時は自動ロールバックします。実行中のジョブには影響しません。
 - **リクエスト JSON (`ConfigPatchRequest`, `extra="forbid"`)**:
   - `default_provider`, `default_model`, `target_provider`
-  - `register_or_update_provider`: `{name, display_name, enabled, default_model, base_url, api_key_env, models, input_cost_per_1m_usd, output_cost_per_1m_usd, provider_type}`
+  - `register_or_update_provider`: `{name, display_name, enabled, default_model, base_url, api_key_env, models, input_cost_per_1m_usd, output_cost_per_1m_usd, provider_type, billing_tier, rpm_limit, tpm_limit, rpd_limit}`
   - `delete_provider`
   - `save_header_api_key_in_memory` (`bool`)
-  - `max_cost_per_job_usd`, `max_daily_cost_usd`, `max_questions_per_job`, `timeout_seconds`, `max_attempts`, `verify_connection`
+  - `max_cost_per_job_usd`, `max_daily_cost_usd`, `max_questions_per_job`, `timeout_seconds`, `max_attempts`, `allow_paid_api`, `enforce_free_tier_limits`, `thinking_mode`, `batch_size`, `max_concurrency`, `enable_cache`, `verify_connection`
 - **使用例**:
   ```bash
   curl -X PATCH http://127.0.0.1:8765/config \
@@ -102,6 +102,12 @@ OpenAPI スキーマ: `GET /openapi.json` / Swagger UI: `GET /docs`
 
 ### `POST /jobs/{job_id}/cancel`（認証不要）
 実行中または待機中ジョブを `CANCELLED` へ移行します。
+
+### `POST /jobs/{job_id}/resume`（認証不要・`wait=true` 既定）
+途中で 429 / 503 等により失敗または中止されたジョブについて、SQLite に保存済みの完了バッチ・キャッシュ結果を再利用し、未処理の問題のみを再実行します。
+
+### `GET /usage`（認証不要）
+API リクエスト回数、入力・出力・思考トークン数（`thinking_tokens`）、モデル別の累計処理時間（`by_model[].processing_time_seconds`）、キャッシュヒット数、ローカル解決数、および各プロバイダーの無料枠残量（`provider_quotas`）を返します（クエリ: `?today_only=true|false`）。
 
 ### `POST /jobs/{job_id}/screenshots`（認証不要）
 許可された結果画面（マスキング済み）のスクリーンショットパスをレポートへ登録します。

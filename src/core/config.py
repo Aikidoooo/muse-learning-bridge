@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from dotenv import load_dotenv
@@ -17,7 +17,7 @@ class AppSectionConfig(BaseModel):
     """アプリケーション基本設定。"""
 
     name: str = "Muse Learning Bridge"
-    version: str = "1.0.0"
+    version: str = "1.1.0"
     environment: str = "local"
     host: str = "127.0.0.1"
     port: int = 8765
@@ -38,6 +38,8 @@ class SecuritySectionConfig(BaseModel):
     max_daily_cost_usd: float = Field(default=5.00, ge=0.0)
     max_questions_per_job: int = Field(default=100, ge=1)
     mask_pii_in_logs_and_reports: bool = True
+    allow_paid_api: bool = False
+    enforce_free_tier_limits: bool = True
 
 
 class RetrySectionConfig(BaseModel):
@@ -46,7 +48,23 @@ class RetrySectionConfig(BaseModel):
     max_attempts: int = Field(default=3, ge=1, le=5)
     base_delay_seconds: float = Field(default=1.0, gt=0.0)
     max_delay_seconds: float = Field(default=8.0, gt=0.0)
+    max_retry_info_wait_seconds: float = Field(default=30.0, gt=0.0, le=120.0)
     timeout_seconds: float = Field(default=45.0, gt=0.0)
+
+
+class OptimizationSectionConfig(BaseModel):
+    """API通信最適化・キャッシュ・バッチ処理設定。"""
+
+    enable_cache: bool = True
+    cache_ttl_seconds: int = Field(default=86400, ge=0)
+    enable_local_solver: bool = True
+    enable_deduplication: bool = True
+    enable_compact_prompt: bool = True
+    batch_size: int = Field(default=12, ge=1, le=50)
+    max_batch_input_chars: int = Field(default=12000, ge=1000)
+    max_batch_images: int = Field(default=4, ge=1, le=20)
+    max_concurrency: int = Field(default=3, ge=1, le=10)
+    thinking_mode: Literal["auto", "minimal", "balanced", "high"] = "auto"
 
 
 class ProviderEntryConfig(BaseModel):
@@ -62,6 +80,11 @@ class ProviderEntryConfig(BaseModel):
     input_cost_per_1m_usd: float = Field(default=0.0, ge=0.0)
     output_cost_per_1m_usd: float = Field(default=0.0, ge=0.0)
     provider_type: str | None = None
+    billing_tier: Literal["free", "paid"] = "free"
+    rpm_limit: int = Field(default=15, ge=0)
+    tpm_limit: int = Field(default=250_000, ge=0)
+    rpd_limit: int = Field(default=1000, ge=0)
+    daily_token_limit: int = Field(default=0, ge=0)
 
     def resolve_base_url(self) -> str:
         """環境変数オーバーライドを考慮したベースURLを返す。"""
@@ -165,6 +188,7 @@ class AppConfig(BaseModel):
     app: AppSectionConfig
     security: SecuritySectionConfig
     retry: RetrySectionConfig
+    optimization: OptimizationSectionConfig = Field(default_factory=OptimizationSectionConfig)
     providers: ProvidersSectionConfig
 
 

@@ -21,6 +21,10 @@ class PublicProviderConfigView(BaseModel):
     models: list[str]
     input_cost_per_1m_usd: float
     output_cost_per_1m_usd: float
+    billing_tier: str = "free"
+    rpm_limit: int = 15
+    tpm_limit: int = 250000
+    rpd_limit: int = 1000
     api_key_configured: bool
     credential_source: str
 
@@ -31,6 +35,7 @@ class PublicConfigResponse(BaseModel):
     app: dict
     security: dict
     retry: dict
+    optimization: dict = Field(default_factory=dict)
     default_provider: str
     providers: dict[str, PublicProviderConfigView]
 
@@ -50,6 +55,10 @@ class ProviderUpsertSpec(BaseModel):
     input_cost_per_1m_usd: float | None = Field(default=None, ge=0.0)
     output_cost_per_1m_usd: float | None = Field(default=None, ge=0.0)
     provider_type: Literal["gemini", "deepseek", "openai", "anthropic", "openai_compatible"] | None = None
+    billing_tier: Literal["free", "paid"] | None = None
+    rpm_limit: int | None = Field(default=None, ge=0)
+    tpm_limit: int | None = Field(default=None, ge=0)
+    rpd_limit: int | None = Field(default=None, ge=0)
 
 
 class ConfigPatchRequest(BaseModel):
@@ -74,6 +83,12 @@ class ConfigPatchRequest(BaseModel):
     max_questions_per_job: int | None = Field(default=None, ge=1, le=500)
     timeout_seconds: float | None = Field(default=None, gt=0.0, le=300.0)
     max_attempts: int | None = Field(default=None, ge=1, le=5)
+    allow_paid_api: bool | None = None
+    enforce_free_tier_limits: bool | None = None
+    thinking_mode: Literal["auto", "minimal", "balanced", "high"] | None = None
+    batch_size: int | None = Field(default=None, ge=1, le=50)
+    max_concurrency: int | None = Field(default=None, ge=1, le=10)
+    enable_cache: bool | None = None
     verify_connection: bool = Field(
         default=True,
         description="設定確定前にAPI接続テストを実行し、失敗時にロールバックするか",

@@ -15,7 +15,7 @@ class AnthropicProvider(BaseAIProvider):
 
     provider_name = ProviderName.ANTHROPIC
 
-    async def _call_api(self, material: MaterialInput) -> tuple[str, int, int, int]:
+    async def _call_api(self, material: MaterialInput) -> tuple[str, int, int, int, int]:
         """Anthropic Messages APIを呼び出し、JSONテキストとトークン使用量を返す。"""
         api_key = self._get_api_key(required=True)
         url = f"{self.base_url}/messages"
@@ -30,7 +30,7 @@ class AnthropicProvider(BaseAIProvider):
             content_blocks.append(
                 {
                     "type": "text",
-                    "text": f"[利用許可画像: question_id={question_id}, image_id={img.image_id}]",
+                    "text": f"[img:{question_id}/{img.image_id}]",
                 }
             )
             content_blocks.append(
@@ -76,7 +76,8 @@ class AnthropicProvider(BaseAIProvider):
         usage = data.get("usage", {})
         in_tok = int(usage.get("input_tokens", 0) or 0)
         out_tok = int(usage.get("output_tokens", 0) or 0)
-        return raw_text, in_tok, out_tok, in_tok + out_tok
+        think_tok = int(usage.get("thinking_tokens", 0) or 0)
+        return raw_text, in_tok, out_tok, in_tok + out_tok, think_tok
 
     async def list_remote_models(self) -> list[str]:
         """Anthropic Models APIから利用可能なモデル一覧を取得する。"""

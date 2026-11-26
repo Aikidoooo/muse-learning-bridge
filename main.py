@@ -74,6 +74,13 @@ def build_parser() -> argparse.ArgumentParser:
     cancel_parser = subparsers.add_parser("cancel", help="ジョブを中止する")
     cancel_parser.add_argument("job_id", help="対象ジョブID")
 
+    usage_parser = subparsers.add_parser("usage", help="API使用量・思考トークン・モデル別処理時間を表示する")
+    usage_parser.add_argument(
+        "--all-time",
+        action="store_true",
+        help="本日分だけでなく全期間の統計を表示する",
+    )
+
     return parser
 
 
@@ -183,6 +190,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "cancel":
             manager = JobManager(config)
             _print_json(manager.cancel_job(args.job_id).model_dump(mode="json"))
+            return 0
+        if args.command == "usage":
+            manager = JobManager(config)
+            _print_json(manager.get_usage_summary(today_only=not args.all_time))
             return 0
     except MuseBridgeError as exc:
         logger.error("CLI実行エラー (%s): %s", exc.code, exc.message)

@@ -1,8 +1,13 @@
-# Muse Learning Bridge (`v1.0.0`)
+# Muse Learning Bridge (`v1.1.0`)
 
-Meta のパーソナル AI エージェント **Muse** を司令塔とし、学校・教育機関から AI 利用が許可された練習教材、復習教材、自作模擬テストを対象に、問題データの構造化・外部 AI API による解析・結果報告までを安全に自動化する Python システムです。
+Meta のパーソナル AI エージェント **Muse** を司令塔とし、学校・教育機関から AI 利用が許可された練習教材、復習教材、自作模擬テストを対象に、問題データの構造化・外部 AI API による解析・結果報告までを安全・高速・最小コストで自動化する Python システムです。
 
 - **拡張機能不要**: Firefox / Chrome 拡張機能のインストールを必須とせず、Python + Playwright 単体で動作します。
+- **API 最適化・高速化 (`v1.1.0`)**:
+  - **API 使用量最小化**: バルクキャッシュ（SQLite TTL付き）、同一問題の重複送信防止、AI不要処理（純粋算術・単一選択）のローカル確定、コンパクト JSON & 共通選択肢・共通指示抽出。
+  - **高速化**: HTTP Keep-Alive 接続プール再利用、RPM/TPM 準拠の非同期並列バッチ処理、モデル世代別の思考レベル動的最適化（`thinkingBudget` / `reasoning_effort`）。
+  - **安定性・エラー対策**: 429 詳細 JSON の `RPM`/`TPM`/`RPD` 判定、`RetryInfo` / `Retry-After` 待機時間の尊重、503 指数バックオフ（無限リトライ禁止）、失敗時部分保存からの `/jobs/{job_id}/resume` 再開。
+  - **利用量・無料枠管理**: リクエスト数・入力/出力/思考トークン・モデル別処理時間の記録（`GET /usage` / `python main.py usage`）、無料枠上限制御と許可なき有料 API 使用のブロック。
 - **エージェント向け文書構成**: AI エージェント（Muse 等）は実行前に必ず [`AGENTS.md`](./AGENTS.md) を確認してください。
 
 ---
@@ -22,7 +27,7 @@ Meta のパーソナル AI エージェント **Muse** を司令塔とし、学�
 ## クイックスタート（Linux / Muse Secure VM）
 
 ```bash
-git clone https://github.com/<OWNER>/muse-learning-bridge.git
+git clone https://github.com/Aikidoooo/muse-learning-bridge.git
 cd muse-learning-bridge
 chmod +x install.sh start.sh
 ./install.sh

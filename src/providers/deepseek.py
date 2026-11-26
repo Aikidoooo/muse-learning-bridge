@@ -24,5 +24,8 @@ class DeepSeekProvider(OpenAIProvider):
         # deepseek-reasoner系はtemperatureやresponse_formatの制約がある場合に備えて分岐
         if "reasoner" not in self.model.lower():
             payload["temperature"] = 0.1
+            payload["max_tokens"] = self.compute_max_output_tokens(material)
             payload["response_format"] = {"type": "json_object"}
+        else:
+            payload["max_tokens"] = min(8192, self.compute_max_output_tokens(material) + 1024)
         return payload
