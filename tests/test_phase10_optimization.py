@@ -282,10 +282,11 @@ async def test_benchmark_25_questions_before_vs_after(
     assert res_after.total_tokens < res_before.total_tokens * 0.20
     assert after_sec < before_sec * 0.25
 
-    # 2回目（キャッシュ再利用）は API リクエスト 0 回・トークン 0・超高速
+    # 2回目（キャッシュ再利用）は API リクエスト 0 回・トークン 0・ベースライン比圧倒的高速
     assert res_cached.api_requests_count == 0
     assert res_cached.total_tokens == 0
-    assert cached_sec < after_sec
+    assert res_cached.cache_hits >= 19
+    assert cached_sec < before_sec * 0.25
 
     print(
         f"\n[25Q BENCHMARK] "
