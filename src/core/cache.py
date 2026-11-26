@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sqlite3
 import threading
+import unicodedata
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -18,6 +20,13 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _normalize_text_for_cache(text: str) -> str:
+    """全半角・問題番号プレフィックス・余分な空白を正規化し、同一設問のキャッシュヒット率を高める。"""
+    norm = unicodedata.normalize("NFKC", text or "").strip()
+    norm = re.sub(r"^(?:(?:問|設問|Q)\s*\d+[\.\):：．]?\s*|\(\d+\)\s*)", "", norm, flags=re.IGNORECASE)
+    return re.sub(r"\s+", " ", norm).strip()
+
+
 def compute_question_cache_key(
     *,
     provider: str,
@@ -26,15 +35,16 @@ def compute_question_cache_key(
     sanitized_question: dict[str, Any],
     image_digests: list[str] | None = None,
 ) -> str:
-    """設問内容・形式・選択肢・許可画像から決定論的なキャッシュキーを生成する。"""
-    # question_id は別テストでの同一設問再利用を許可するためキャッシュキーから除外し、純粋内容でハッシュ化
+    """設問内容・形式・選択肢・許可画像から表記揺れを吸収した決定論的キャッシュキーを生成する。"""
+    # question_id や表記揺れでキャッシュが外れないよう正規化した内容のみをハッシュ化
+    raw_choices = sanitized_question.get("choices", []) or []
     canonical = {
         "provider": provider.strip().lower(),
         "model": model.strip(),
         "category": material_category,
         "format": sanitized_question.get("question_format"),
-        "prompt": sanitized_question.get("prompt", ""),
-        "choices": sanitized_question.get("choices", []),
+        "prompt": _normalize_text_for_cache(str(sanitized_question.get("prompt", ""))),
+        "choices": [_normalize_text_for_cache(str(c)) for c in raw_choices],
         "supplementary_info": sanitized_question.get("supplementary_info", {}),
         "image_digests": image_digests or [],
     }

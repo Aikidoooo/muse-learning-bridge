@@ -1,6 +1,6 @@
 app:
   name: "Muse Learning Bridge"
-  version: "1.1.0"
+  version: "1.2.0"
   environment: "local"
   host: "127.0.0.1"
   port: 8765
@@ -48,9 +48,14 @@ optimization:
   enable_deduplication: true
   # コンパクトJSON＋圧縮プロンプト＋共通選択肢抽出
   enable_compact_prompt: true
+  # 超短縮ワイヤキー＆最小出力形式によるAPIトークン極小化
+  ultra_compact_wire: true
+  minimal_output: true
+  # 低思考で曖昧な設問のみ段階的再確認するカスケード制御
+  cascade_escalation: true
   # 1リクエストあたりバッチ問題数・サイズ上限・並列数
-  batch_size: 12
-  max_batch_input_chars: 12000
+  batch_size: 25
+  max_batch_input_chars: 14000
   max_batch_images: 4
   max_concurrency: 3
   # 思考レベル最適化（auto / minimal / balanced / high）

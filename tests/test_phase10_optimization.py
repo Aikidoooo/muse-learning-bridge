@@ -149,42 +149,52 @@ async def test_benchmark_25_questions_before_vs_after(
     async def mock_gemini_handler(request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content.decode("utf-8"))
         user_text = body["contents"][0]["parts"][0]["text"]
+        sys_text = body.get("systemInstruction", {}).get("parts", [{}])[0].get("text", "")
+        use_compact_out = '"r":[{"i":' in sys_text
         gen_cfg = body.get("generationConfig", {})
         thinking_cfg = gen_cfg.get("thinkingConfig", {})
         thinking_budget = int(thinking_cfg.get("thinkingBudget", 2048))
 
-        # JSON中の対象question_idを特定
+        # JSON中の対象question_idを特定（フル形式/超短縮ワイヤ両対応）
         json_start = user_text.find("{")
         json_end = user_text.rfind("}") + 1
         sent_mat = json.loads(user_text[json_start:json_end])
-        sent_qids = [q["question_id"] for q in sent_mat["questions"]]
+        raw_qs = sent_mat.get("q") or sent_mat.get("questions", [])
+        sent_qids = [str(q.get("i") or q.get("question_id")) for q in raw_qs]
 
         # 現実的な入力文字数比例トークン + 思考設定比例トークン + ネットワーク遅延シミュレート
         in_tokens = max(20, len(json.dumps(body, ensure_ascii=False)) // 3)
         think_tokens = len(sent_qids) * (thinking_budget // 16 if thinking_budget > 0 else 0)
-        # 1リクエストあたりの固定RTT(18ms) + 出力生成(3ms/問) + 思考時間(thinking_budget依存)
-        await asyncio.sleep(0.018 + 0.003 * len(sent_qids) + (0.012 if thinking_budget > 512 else 0.0))
+        await asyncio.sleep(0.018 + 0.002 * len(sent_qids) + (0.012 if thinking_budget > 512 else 0.0))
 
-        # q-01が代表問題として送信された場合、q-03/q-05も内部的には同一設問だがAPIへは送られない
-        def _solve_answer(qid: str, idx_q: dict[str, Any]) -> list[str]:
-            if qid in truth:
-                return truth[qid]
-            return []
+        if use_compact_out:
+            results_payload = [
+                {
+                    "i": qid,
+                    "a": truth.get(qid, []),
+                    "e": "根拠正答。",
+                    "u": "l",
+                    "c": 0.99,
+                }
+                for qid in sent_qids
+            ]
+            raw_out = json.dumps({"r": results_payload}, ensure_ascii=False, separators=(",", ":"))
+        else:
+            results_payload = [
+                {
+                    "question_id": qid,
+                    "answer_candidates": truth.get(qid, []),
+                    "explanation": "詳細な長文解説を出力するため出力トークンを消費します。" * 3,
+                    "uncertainty": "low",
+                    "confidence": 0.99,
+                    "needs_review": False,
+                    "review_reason": None,
+                }
+                for qid in sent_qids
+            ]
+            raw_out = json.dumps({"results": results_payload}, ensure_ascii=False)
 
-        results_payload = [
-            {
-                "question_id": q["question_id"],
-                "answer_candidates": _solve_answer(q["question_id"], q),
-                "explanation": "根拠に基づく正答。" if len(sent_qids) > 1 else "詳細な長文解説を出力するため出力トークンを消費します。" * 3,
-                "uncertainty": "low",
-                "confidence": 0.99,
-                "needs_review": False,
-                "review_reason": None,
-            }
-            for q in sent_mat["questions"]
-        ]
-        raw_out = json.dumps({"results": results_payload}, ensure_ascii=False)
-        out_tokens = max(15, len(raw_out) // 3)
+        out_tokens = max(12, len(raw_out) // 3)
         return httpx.Response(
             200,
             json={
@@ -206,6 +216,9 @@ async def test_benchmark_25_questions_before_vs_after(
     cfg_before.optimization.enable_local_solver = False
     cfg_before.optimization.enable_deduplication = False
     cfg_before.optimization.enable_compact_prompt = False
+    cfg_before.optimization.ultra_compact_wire = False
+    cfg_before.optimization.minimal_output = False
+    cfg_before.optimization.cascade_escalation = False
     cfg_before.optimization.batch_size = 1
     cfg_before.optimization.max_concurrency = 1
     cfg_before.optimization.thinking_mode = "high"
@@ -219,7 +232,7 @@ async def test_benchmark_25_questions_before_vs_after(
     acc_before = sum(1 for r in res_before.results if r.answer_candidates == truth[r.question_id])
 
     # ------------------------------------------------------------------
-    # 2) 改善後最適化版（初回実行）: 並列バッチ・圧縮・ローカル解決・重複除外・思考AUTO・キャッシュON
+    # 2) 改善後最適化版（初回実行）: 1バッチ集約・超短縮ワイヤ・最小出力・ローカル解決・重複除外・思考0・キャッシュON
     # ------------------------------------------------------------------
     cfg_after = _opt_config(tmp_path / "after")
     cache_store = OptimizationCacheStore(cfg_after.app.db_path)
@@ -256,18 +269,18 @@ async def test_benchmark_25_questions_before_vs_after(
     assert acc_after == 25
     assert acc_cached == 25
 
-    # APIリクエスト回数: 改善前 25回 -> 改善後 2回（ローカル4問+重複2問除外で残り19問を12上限均等2バッチ）
+    # APIリクエスト回数: 改善前 25回 -> 改善後 1回（ローカル4問+重複2問除外で残り19問を1リクエストに集約）
     assert res_before.api_requests_count == 25
-    assert res_after.api_requests_count == 2
+    assert res_after.api_requests_count == 1
     assert res_after.local_solved_count == 4
     assert res_after.deduplicated_count == 2
+    assert res_after.thinking_tokens == 0
 
-    # 消費トークン大幅削減 & 高速化確認
-    assert res_after.input_tokens < res_before.input_tokens * 0.45
-    assert res_after.output_tokens < res_before.output_tokens * 0.60
-    assert res_after.thinking_tokens < res_before.thinking_tokens * 0.50
-    assert res_after.total_tokens < res_before.total_tokens * 0.45
-    assert after_sec < before_sec * 0.50
+    # 極限トークン削減 & 高速化確認
+    assert res_after.input_tokens < res_before.input_tokens * 0.25
+    assert res_after.output_tokens < res_before.output_tokens * 0.45
+    assert res_after.total_tokens < res_before.total_tokens * 0.20
+    assert after_sec < before_sec * 0.25
 
     # 2回目（キャッシュ再利用）は API リクエスト 0 回・トークン 0・超高速
     assert res_cached.api_requests_count == 0
@@ -451,7 +464,8 @@ async def test_503_exponential_backoff_and_partial_resume(
         body = json.loads(req.content.decode("utf-8"))
         txt = body["contents"][0]["parts"][0]["text"]
         payload = json.loads(txt[txt.find("{") : txt.rfind("}") + 1])
-        qids = [q["question_id"] for q in payload["questions"]]
+        raw_qs = payload.get("q") or payload.get("questions", [])
+        qids = [str(q.get("i") or q.get("question_id")) for q in raw_qs]
         seen_qids_per_call.append(qids)
 
         if "rq-3" in qids and fail_second_batch:
@@ -650,3 +664,114 @@ def test_local_solver_precision_safety() -> None:
         question_format=QuestionFormat.SINGLE_CHOICE,
     )
     assert try_solve_question_locally(algebra) is None
+
+
+@pytest.mark.asyncio
+async def test_cascade_escalation_and_normalized_cache_hit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """低思考で低確信の難問だけエスカレーション再確認し、問題番号違いの同一問題にもキャッシュが効くことを確認。"""
+    monkeypatch.setenv("GEMINI_API_KEY", "dummy-cascade-key-123456")
+    cfg = _opt_config(tmp_path)
+    cache_store = OptimizationCacheStore(cfg.app.db_path)
+
+    budgets_seen: list[tuple[int, list[str]]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = json.loads(req.content.decode("utf-8"))
+        t_budget = int(body.get("generationConfig", {}).get("thinkingConfig", {}).get("thinkingBudget", -1))
+        txt = body["contents"][0]["parts"][0]["text"]
+        payload = json.loads(txt[txt.find("{") : txt.rfind("}") + 1])
+        qids = [str(q.get("i") or q.get("question_id")) for q in (payload.get("q") or payload.get("questions", []))]
+        budgets_seen.append((t_budget, qids))
+
+        if t_budget == 0:
+            # cq-1 は低確信、cq-2 は高確信("TLS")で返す -> cq-1 だけエスカレーション対象
+            res = [
+                {"i": "cq-1", "a": ["A"], "e": "仮判定", "u": "m", "c": 0.45, "nr": True, "rr": "再確認推奨"},
+                {"i": "cq-2", "a": ["TLS"], "e": "確定", "u": "l", "c": 0.99},
+            ]
+        else:
+            res = [
+                {"i": "cq-1", "a": ["C"], "e": "再推論で確定", "u": "l", "c": 0.96},
+            ]
+
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [{"content": {"parts": [{"text": json.dumps({"r": res}, ensure_ascii=False)}]}}],
+                "usageMetadata": {
+                    "promptTokenCount": 40,
+                    "candidatesTokenCount": 20,
+                    "thoughtsTokenCount": 0 if t_budget == 0 else 50,
+                    "totalTokenCount": 60 if t_budget == 0 else 110,
+                },
+            },
+        )
+
+    mat1 = MaterialInput(
+        material_id="mat-cas-1",
+        material_name="カスケード検証1",
+        ai_usage_approved=True,
+        questions=[
+            QuestionItem(
+                question_id="cq-1",
+                question_number="問1",
+                prompt="問1. 次の論理パズルの正答を選べ。",
+                choices=["A", "B", "C"],
+                question_format=QuestionFormat.SINGLE_CHOICE,
+            ),
+            QuestionItem(
+                question_id="cq-2",
+                question_number="問2",
+                prompt="問2. HTTPの暗号化方式は？",
+                choices=["ARP", "TLS"],
+                question_format=QuestionFormat.SINGLE_CHOICE,
+            ),
+        ],
+    )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        prov = create_provider(cfg, provider_name="gemini", http_client=client, cache_store=cache_store)
+        r1 = await prov.analyze(mat1)
+
+    # 1回目: thinkingBudget=0 で cq-1, cq-2 送信 -> cq-1 のみ thinkingBudget=256 で再確認
+    assert budgets_seen == [(0, ["cq-1", "cq-2"]), (256, ["cq-1"])]
+    assert r1.results[0].answer_candidates == ["C"]
+    assert r1.results[1].answer_candidates == ["TLS"]
+    assert r1.thinking_tokens == 50
+
+    # 別テストで問題番号表記（問1. -> Q99:）と全角スペースだけ異なる同一問題 -> キャッシュ全ヒットで0リクエスト
+    mat2 = MaterialInput(
+        material_id="mat-cas-2",
+        material_name="カスケード検証2",
+        ai_usage_approved=True,
+        questions=[
+            QuestionItem(
+                question_id="new-1",
+                question_number="Q99",
+                prompt="Q99: 次の論理パズルの正答を選べ。",
+                choices=["A", "B", "C"],
+                question_format=QuestionFormat.SINGLE_CHOICE,
+            ),
+            QuestionItem(
+                question_id="new-2",
+                question_number="Q100",
+                prompt="Q100: HTTPの暗号化方式は？",
+                choices=["ARP", "ＴＬＳ"],
+                question_format=QuestionFormat.SINGLE_CHOICE,
+            ),
+        ],
+    )
+
+    budgets_seen.clear()
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        prov2 = create_provider(cfg, provider_name="gemini", http_client=client, cache_store=cache_store)
+        r2 = await prov2.analyze(mat2)
+
+    assert budgets_seen == []
+    assert r2.api_requests_count == 0
+    assert r2.cache_hits == 2
+    assert r2.results[0].answer_candidates == ["C"]
+    assert r2.results[1].answer_candidates == ["TLS"]

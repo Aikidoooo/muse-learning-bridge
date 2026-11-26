@@ -49,7 +49,7 @@ class AnthropicProvider(BaseAIProvider):
             "model": self.model,
             "max_tokens": self.compute_max_output_tokens(material),
             "temperature": 0.1,
-            "system": SYSTEM_INSTRUCTION,
+            "system": self.build_system_instruction(material),
             "messages": [
                 {
                     "role": "user",

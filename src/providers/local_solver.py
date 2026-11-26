@@ -6,6 +6,7 @@ import ast
 import math
 import operator
 import re
+import unicodedata
 from typing import Any
 
 from src.schemas.analysis import QuestionAnalysisResult
@@ -51,7 +52,7 @@ def _safe_eval_ast(node: ast.AST) -> float:
 
 def _try_evaluate_pure_arithmetic(prompt: str) -> str | None:
     """純粋な算術式のみで構成される問題の計算結果を文字列で返す（解釈の余地がある場合はNone）。"""
-    text = prompt.strip()
+    text = unicodedata.normalize("NFKC", prompt).strip()
     text = _ARITH_PREFIX_PATTERN.sub("", text).strip()
     text = text.replace("×", "*").replace("÷", "/").replace("−", "-")
     text = re.sub(r"[=＝]\s*[?？□\(\)\s]*$", "", text).strip()

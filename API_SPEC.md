@@ -48,7 +48,7 @@ OpenAPI スキーマ: `GET /openapi.json` / Swagger UI: `GET /docs`
 
 ### `GET /health`（認証不要）
 サーバー稼働状況を確認します。
-- **レスポンス (`200 OK`)**: `{"status": "ok", "app_name": "Muse Learning Bridge", "version": "1.1.0", "default_provider": "gemini"}`
+- **レスポンス (`200 OK`)**: `{"status": "ok", "app_name": "Muse Learning Bridge", "version": "1.2.0", "default_provider": "gemini"}`
 
 ### `GET /providers`（認証不要）
 登録済みプロバイダー（組み込み 5 種 + カスタム登録分）の一覧を返します。API キー文字列は含みません。

@@ -21,6 +21,10 @@ class OpenAIProvider(BaseAIProvider):
         m = self.model.lower()
         return m.startswith(("o1", "o3", "o4", "gpt-5"))
 
+    def _supports_thinking_escalation(self) -> bool:
+        """OpenAI推論系モデルのみ reasoning_effort 段階引き上げに対応する。"""
+        return self._is_reasoning_model()
+
     def _build_messages(self, material: MaterialInput) -> list[dict[str, Any]]:
         """Chat Completions用のメッセージ配列を構築する。"""
         user_content: list[dict[str, Any]] = [
@@ -48,7 +52,7 @@ class OpenAIProvider(BaseAIProvider):
         )
 
         return [
-            {"role": "system", "content": SYSTEM_INSTRUCTION},
+            {"role": "system", "content": self.build_system_instruction(material)},
             {"role": "user", "content": user_payload},
         ]
 

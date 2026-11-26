@@ -17,7 +17,7 @@ class AppSectionConfig(BaseModel):
     """アプリケーション基本設定。"""
 
     name: str = "Muse Learning Bridge"
-    version: str = "1.1.0"
+    version: str = "1.2.0"
     environment: str = "local"
     host: str = "127.0.0.1"
     port: int = 8765
@@ -60,8 +60,11 @@ class OptimizationSectionConfig(BaseModel):
     enable_local_solver: bool = True
     enable_deduplication: bool = True
     enable_compact_prompt: bool = True
-    batch_size: int = Field(default=12, ge=1, le=50)
-    max_batch_input_chars: int = Field(default=12000, ge=1000)
+    ultra_compact_wire: bool = True
+    minimal_output: bool = True
+    cascade_escalation: bool = True
+    batch_size: int = Field(default=25, ge=1, le=50)
+    max_batch_input_chars: int = Field(default=14000, ge=1000)
     max_batch_images: int = Field(default=4, ge=1, le=20)
     max_concurrency: int = Field(default=3, ge=1, le=10)
     thinking_mode: Literal["auto", "minimal", "balanced", "high"] = "auto"

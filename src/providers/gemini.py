@@ -15,6 +15,11 @@ class GeminiProvider(BaseAIProvider):
 
     provider_name = ProviderName.GEMINI
 
+    def _supports_thinking_escalation(self) -> bool:
+        """Gemini 2.5 / 3系モデルは思考予算の段階引き上げに対応する。"""
+        m = self.model.lower()
+        return ("gemini-2.5" in m and "gemini-2.5-pro" not in m) or "gemini-3" in m
+
     def _build_thinking_config(self, profile: str) -> dict[str, Any] | None:
         """モデル世代に応じた最適な thinkingConfig を返す。"""
         m = self.model.lower()
@@ -22,10 +27,10 @@ class GeminiProvider(BaseAIProvider):
             level_map = {"minimal": "minimal", "balanced": "low", "high": "medium"}
             return {"thinkingLevel": level_map.get(profile, "low")}
         if "gemini-2.5-pro" in m:
-            budget_map = {"minimal": 128, "balanced": 1024, "high": 4096}
-            return {"thinkingBudget": budget_map.get(profile, 1024)}
+            budget_map = {"minimal": 128, "balanced": 512, "high": 2048}
+            return {"thinkingBudget": budget_map.get(profile, 512)}
         if "gemini-2.5" in m:
-            budget_map = {"minimal": 0, "balanced": 512, "high": 2048}
+            budget_map = {"minimal": 0, "balanced": 256, "high": 2048}
             return {"thinkingBudget": budget_map.get(profile, 0)}
         return None
 
@@ -61,7 +66,7 @@ class GeminiProvider(BaseAIProvider):
 
         payload: dict[str, Any] = {
             "systemInstruction": {
-                "parts": [{"text": SYSTEM_INSTRUCTION}],
+                "parts": [{"text": self.build_system_instruction(material)}],
             },
             "contents": [
                 {
